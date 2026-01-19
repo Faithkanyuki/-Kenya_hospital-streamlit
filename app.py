@@ -13,7 +13,11 @@ try:
     # Add dummy monotonic_cst attribute to prevent errors
     if not hasattr(tree_classes.DecisionTreeClassifier, 'monotonic_cst'):
         tree_classes.DecisionTreeClassifier.monotonic_cst = None
-except:
+except ImportError:
+    # sklearn not installed yet, that's ok
+    pass
+except Exception:
+    # Other errors, also ok
     pass
 # ===== END CRITICAL FIXES =====
 
@@ -29,11 +33,17 @@ st.write("Clinical tool for predicting patient readmission risk")
 
 # Debug information
 with st.expander("System Information", expanded=False):
-    import sklearn
     st.write(f"**Python version:** {sys.version.split()[0]}")
-    st.write(f"**scikit-learn version:** {sklearn.__version__}")
+    # Try to import sklearn, but don't fail if it's not available
+    try:
+        import sklearn
+        st.write(f"**scikit-learn version:** {sklearn.__version__}")
+    except ImportError:
+        st.write("**scikit-learn:** Not available (check requirements.txt)")
+    
     st.write(f"**pandas version:** {pd.__version__}")
     st.write(f"**numpy version:** {np.__version__}")
+    
 
 # ===== FIXED: load_model_and_data function =====
 @st.cache_resource
