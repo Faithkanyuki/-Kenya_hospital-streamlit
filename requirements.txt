@@ -1,4 +1,3 @@
-# Core dependencies for Kenya Hospital Readmission Predictor - Streamlit Cloud Optimized
 streamlit==1.28.0
 pandas==1.5.3
 numpy==1.24.3
