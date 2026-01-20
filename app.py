@@ -48,18 +48,20 @@ def load_model_and_data():
 model, features, metadata = load_model_and_data()
 threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
 
-# Prediction function - COMPLETELY REWRITTEN
+# Prediction function - BULLETPROOF VERSION
 def predict_readmission_risk(user_inputs_dict, model, feature_list):
-    """Make prediction - FIXED VERSION"""
+    """Make prediction - BULLETPROOF VERSION"""
     
     if model is None or not feature_list:
         st.error("Model not loaded")
         return None
     
     try:
-        # Create DataFrame with exact features in exact order
-        input_data = pd.DataFrame(columns=feature_list)
-        input_data.loc[0] = 0.0  # Initialize all to 0
+        # Create a dictionary with ALL features initialized to 0.0
+        feature_dict = {feat: 0.0 for feat in feature_list}
+        
+        # Create DataFrame from dictionary (ensures correct order)
+        input_data = pd.DataFrame([feature_dict])
         
         # Fill in user values - BE VERY EXPLICIT
         # Numeric features
@@ -110,17 +112,31 @@ def predict_readmission_risk(user_inputs_dict, model, feature_list):
         age_group_idx = age_groups.index(user_inputs_dict['age_group'])
         input_data.at[0, f'age_group_{age_group_idx}'] = 1.0
         
-        # DEBUG INFO
+        # DEBUG INFO - ENHANCED
         with st.expander("🔍 Debug Information"):
-            st.write(f"**Input shape:** {input_data.shape}")
+            st.write(f"**DataFrame shape:** {input_data.shape}")
+            st.write(f"**DataFrame dtypes:** {input_data.dtypes.unique()}")
             st.write(f"**Model expects:** {model.n_features_in_} features")
+            st.write(f"**Feature order matches:** {list(input_data.columns) == list(model.feature_names_in_)}")
             st.write(f"**Non-zero values:** {(input_data != 0).sum().sum()}")
-            st.write(f"**Min value:** {input_data.min().min()}")
-            st.write(f"**Max value:** {input_data.max().max()}")
+            st.write(f"**Value range:** {input_data.min().min():.2f} to {input_data.max().max():.2f}")
+            
+            st.write("**First 10 column names (ours vs model):**")
+            comparison = pd.DataFrame({
+                'Our columns': list(input_data.columns)[:10],
+                'Model expects': list(model.feature_names_in_)[:10]
+            })
+            st.dataframe(comparison)
             
             st.write("**Non-zero features:**")
             non_zero = input_data.loc[0, input_data.loc[0] != 0]
             st.dataframe(non_zero)
+            
+            st.write("**First 10 values being sent to model:**")
+            st.write(input_data.iloc[0, :10].tolist())
+        
+        # Ensure correct data type
+        input_data = input_data.astype(float)
         
         # Make prediction
         probability = model.predict_proba(input_data)[0, 1]
