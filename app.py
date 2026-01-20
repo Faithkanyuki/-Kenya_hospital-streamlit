@@ -131,75 +131,86 @@ threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
 
 # Prediction function
 def predict_readmission_risk(data_dict, all_features):
-    """Make prediction with all 48 features"""
+    """Make prediction with all 48 features - FIXED VERSION"""
     try:
         if model is None or not all_features:
             st.error("Model or features not loaded properly")
             return None
         
-        # Create dataframe with ALL features initialized to 0
-        df = pd.DataFrame({feat: [0] for feat in all_features})
+        # Create dataframe with ALL features initialized to 0.0 (important!)
+        df = pd.DataFrame({feat: [0.0] for feat in all_features})
         
-        # Update with user input
+        # Update with user input - ensure we're setting values correctly
         for key, value in data_dict.items():
             if key in df.columns:
-                df[key] = value
+                # Use .at for single value assignment
+                df.at[0, key] = float(value)
+        
+        # DEBUG: Show what we're sending to the model
+        with st.expander("🔍 Debug Info - Click to see prediction inputs"):
+            st.write("**Input DataFrame shape:**", df.shape)
+            st.write("**Expected features:**", len(all_features))
+            st.write("**Non-zero input features:**")
+            non_zero_features = df.loc[0, df.loc[0] != 0]
+            st.dataframe(non_zero_features)
+            st.write("**Value ranges:**")
+            st.write(f"- Min value: {df.min().min()}")
+            st.write(f"- Max value: {df.max().max()}")
+            st.write(f"- Total features with value=1: {(df == 1).sum().sum()}")
+            st.write(f"- Total features with value>0: {(df > 0).sum().sum()}")
         
         # Make prediction
         prob = model.predict_proba(df)[0, 1]
+        
+        # Validate probability is in correct range [0, 1]
+        if prob < 0 or prob > 1:
+            st.error(f"⚠️ INVALID PROBABILITY: {prob}")
+            st.error("This indicates a serious data preprocessing issue!")
+            st.write("**Debugging information:**")
+            st.write(f"- Input data shape: {df.shape}")
+            st.write(f"- Model expects {model.n_features_in_} features")
+            st.write("- First 10 values:", df.iloc[0, :10].tolist())
+            return None
+        
         return prob
     
     except Exception as e:
         st.error(f"Prediction error: {str(e)}")
-        st.write(f"Expected {len(all_features)} features, got {len(data_dict)}")
-        
-        # Debug information
-        with st.expander("Debug Details"):
-            st.write("**Model attributes:**")
-            if model:
-                attrs = ['n_features_in_', 'n_estimators', 'estimators_']
-                for attr in attrs:
-                    st.write(f"- {attr}: {hasattr(model, attr)}")
-            
-            st.write("**Input features:**")
-            st.write(list(data_dict.keys())[:10])
-            
-            st.write("**Expected features:**")
-            st.write(all_features[:10])
-        
+        import traceback
+        st.code(traceback.format_exc())
         return None
 
 # Helper function to convert categorical selections to one-hot encoding
 def prepare_features(user_inputs):
-    """Convert user selections to one-hot encoded features - BASED ON YOUR 48 FEATURES"""
+    """Convert user selections to one-hot encoded features - FIXED VERSION"""
     features_dict = {}
     
-    # YOUR EXACT NUMERIC FEATURES FROM TRAINING
+    # NUMERIC FEATURES - ensure they're floats, not strings
     numeric_map = {
-        'time_in_hospital': user_inputs['time_in_hospital'],
-        'num_lab_procedures': user_inputs['num_lab_procedures'],
-        'num_medications': user_inputs['num_medications'],
-        'num_medications_changed': user_inputs['num_medications_changed'],
-        'total_hospital_visits': user_inputs['total_hospital_visits'],
-        'number_emergency': user_inputs['number_emergency'],
-        'age_numeric': user_inputs['age_numeric']
+        'time_in_hospital': float(user_inputs['time_in_hospital']),
+        'num_lab_procedures': float(user_inputs['num_lab_procedures']),
+        'num_medications': float(user_inputs['num_medications']),
+        'num_medications_changed': float(1 if user_inputs['num_medications_changed'] == "Yes" else 0),
+        'total_hospital_visits': float(user_inputs['total_hospital_visits']),
+        'number_emergency': float(user_inputs['number_emergency']),
+        'age_numeric': float(user_inputs['age_numeric'])
     }
     features_dict.update(numeric_map)
     
-    # Gender one-hot encoding (YOUR: gender_0, gender_1, gender_2)
+    # Gender one-hot encoding (gender_0, gender_1, gender_2)
     gender_options = ["Female", "Male", "Unknown/Other"]
     for i, option in enumerate(gender_options):
-        features_dict[f'gender_{i}'] = 1 if user_inputs['gender'] == option else 0
+        features_dict[f'gender_{i}'] = 1.0 if user_inputs['gender'] == option else 0.0
     
-    # Admission type one-hot encoding (YOUR: admission_type_0 to admission_type_7)
+    # Admission type one-hot encoding (admission_type_0 to admission_type_7)
     admission_options = [
         "Emergency", "Urgent", "Elective", "Newborn", 
         "Trauma Center", "Not Mapped", "NULL", "Not Available"
     ]
     for i, option in enumerate(admission_options):
-        features_dict[f'admission_type_{i}'] = 1 if user_inputs['admission_type'] == option else 0
+        features_dict[f'admission_type_{i}'] = 1.0 if user_inputs['admission_type'] == option else 0.0
     
-    # Discharge disposition one-hot encoding (YOUR: discharge_disposition_0 to discharge_disposition_25)
+    # Discharge disposition one-hot encoding (discharge_disposition_0 to discharge_disposition_25)
     discharge_options = [
         "Discharged to home", "Discharged/transferred to another short term hospital",
         "Discharged/transferred to SNF", "Discharged/transferred to ICF",
@@ -220,19 +231,24 @@ def prepare_features(user_inputs):
         "Discharged/transferred to a hospital-based Medicare approved swing bed",
         "Discharged/transferred to an inpatient rehabilitation facility"
     ]
-    for i in range(26):  # YOUR 26 discharge disposition features
-        features_dict[f'discharge_disposition_{i}'] = 0
-    # Set only the selected one to 1
-    selected_idx = discharge_options.index(user_inputs['discharge_disposition'])
-    features_dict[f'discharge_disposition_{selected_idx}'] = 1
     
-    # Age group one-hot encoding (YOUR: age_group_0 to age_group_3)
+    # Initialize all discharge_disposition features to 0
+    for i in range(26):
+        features_dict[f'discharge_disposition_{i}'] = 0.0
+    
+    # Set only the selected one to 1
+    try:
+        selected_idx = discharge_options.index(user_inputs['discharge_disposition'])
+        features_dict[f'discharge_disposition_{selected_idx}'] = 1.0
+    except ValueError:
+        st.warning(f"Unknown discharge disposition: {user_inputs['discharge_disposition']}")
+    
+    # Age group one-hot encoding (age_group_0 to age_group_3)
     age_group_options = ["18-45", "46-65", "66-85", "86+"]
     for i, option in enumerate(age_group_options):
-        features_dict[f'age_group_{i}'] = 1 if user_inputs['age_group'] == option else 0
+        features_dict[f'age_group_{i}'] = 1.0 if user_inputs['age_group'] == option else 0.0
     
     return features_dict
-
 # User interface
 st.header("Patient Assessment")
 
