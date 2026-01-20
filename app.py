@@ -38,10 +38,38 @@ def load_model_and_data():
     """Load model, features, and metadata"""
     try:
         import joblib
+        import os
         
         model = joblib.load("random_forest_model.joblib")
         features = joblib.load("feature_names.pkl")
         metadata = joblib.load("model_metadata.pkl")
+        
+        # DEBUG: Check what model was loaded
+        st.write("🔍 **MODEL FILE INFO:**")
+        st.write(f"- File size: {os.path.getsize('random_forest_model.joblib') / (1024*1024):.2f} MB")
+        st.write(f"- n_estimators: {model.n_estimators}")
+        st.write(f"- max_depth: {model.max_depth}")
+        
+        # Test with known input
+        test_df = pd.DataFrame({feat: [0.0] for feat in features})
+        test_df.at[0, 'time_in_hospital'] = 7.0
+        test_df.at[0, 'num_lab_procedures'] = 45.0
+        test_df.at[0, 'num_medications'] = 12.0
+        test_df.at[0, 'total_hospital_visits'] = 3.0
+        test_df.at[0, 'number_emergency'] = 1.0
+        test_df.at[0, 'age_numeric'] = 58.0
+        test_df.at[0, 'gender_0'] = 1.0
+        test_df.at[0, 'admission_type_0'] = 1.0
+        test_df.at[0, 'discharge_disposition_0'] = 1.0
+        test_df.at[0, 'age_group_1'] = 1.0
+        
+        test_prob = model.predict_proba(test_df)[0, 1]
+        st.write(f"- Test prediction: {test_prob:.4f} ({test_prob*100:.1f}%)")
+        
+        if test_prob > 1:
+            st.error("⚠️ WRONG MODEL FILE IS DEPLOYED!")
+        else:
+            st.success(f"✅ Correct model loaded")
         
         st.success(f"✅ Model loaded: {len(features)} features, threshold={metadata.get('model_info', {}).get('optimal_threshold', 0.48):.2f}")
         
@@ -50,7 +78,6 @@ def load_model_and_data():
     except Exception as e:
         st.error(f"❌ Error loading model: {e}")
         return None, [], {}
-
 model, features, metadata = load_model_and_data()
 threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
 
