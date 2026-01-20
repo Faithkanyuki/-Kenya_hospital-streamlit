@@ -40,9 +40,9 @@ def load_model_and_data():
         import joblib
         import os
         
-        model = joblib.load("random_forest_model.joblib")
-        features = joblib.load("feature_names.pkl")
-        metadata = joblib.load("model_metadata.pkl")
+        model = joblib.load("model_rf_v2.joblib")  # Changed
+        features = joblib.load("features_v2.pkl")   # Changed
+        metadata = joblib.load("metadata_v2.pkl")   # Changed
         
         # DEBUG: Check what model was loaded
         st.write("🔍 **MODEL FILE INFO:**")
