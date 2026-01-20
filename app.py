@@ -13,7 +13,13 @@ st.set_page_config(
 )
 
 st.title("Kenya Hospital Readmission Risk Predictor")
+
 st.write("Clinical tool for predicting patient readmission risk")
+
+# Add this right after your title
+if st.button(" Clear Cache and Reload Model"):
+    st.cache_resource.clear()
+    st.rerun()
 
 # System info
 with st.expander("System Information", expanded=False):
