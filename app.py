@@ -1,5 +1,9 @@
 
 import os
+
+#MUST be before importing streamlit
+os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,7 +11,7 @@ import warnings
 import sys
 
 warnings.filterwarnings('ignore')
-os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+
 # Page setup
 st.set_page_config(
     page_title="Kenya Hospital Readmission Predictor",
