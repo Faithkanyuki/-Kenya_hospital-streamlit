@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import warnings
 import sys
-import joblib
 
 warnings.filterwarnings('ignore')
 
@@ -14,6 +13,7 @@ st.set_page_config(
 )
 
 st.title("Kenya Hospital Readmission Risk Predictor")
+
 st.write("Clinical tool for predicting patient readmission risk")
 
 # Add this right after your title
@@ -32,59 +32,33 @@ with st.expander("System Information", expanded=False):
     st.write(f"**pandas version:** {pd.__version__}")
     st.write(f"**numpy version:** {np.__version__}")
 
-# FIXED: Load model with compatibility fix for scikit-learn 1.3.2
+# Load model
 @st.cache_resource
 def load_model_and_data():
-    """Load model, features, and metadata with compatibility fix"""
+    """Load model, features, and metadata"""
     try:
         import joblib
         import os
         
-        # FIRST TRY: Standard loading
-        try:
-            model = joblib.load("model_rf_v2.joblib")
-        except AttributeError as e:
-            if "'DecisionTreeClassifier' object has no attribute 'monotonic_cst'" in str(e):
-                st.warning("⚠️ Model compatibility issue detected. Applying fix...")
-                
-                # FIX: Use custom unpickler to handle missing attribute
-                from joblib import load
-                import sklearn.tree
-                
-                # Temporary monkey patch before loading
-                original_tree_init = sklearn.tree.DecisionTreeClassifier.__init__
-                
-                def patched_tree_init(self, *, monotonic_cst=None, **kwargs):
-                    # Ignore the monotonic_cst parameter
-                    if 'monotonic_cst' in kwargs:
-                        kwargs.pop('monotonic_cst')
-                    original_tree_init(self, **kwargs)
-                
-                # Apply patch
-                sklearn.tree.DecisionTreeClassifier.__init__ = patched_tree_init
-                
-                # Now load the model
-                model = load("model_rf_v2.joblib")
-                
-                # Restore original
-                sklearn.tree.DecisionTreeClassifier.__init__ = original_tree_init
-                
-                st.success("✅ Model loaded with compatibility fix")
-            else:
-                raise e
-        
+        model = joblib.load("model_rf_v2.joblib")
         features = joblib.load("features_v2.pkl")
         metadata = joblib.load("metadata_v2.pkl")
+        
+        # CRITICAL FIX: Patch trees for sklearn version mismatch
+        st.write("🔧 Patching model for compatibility...")
+        if hasattr(model, 'estimators_'):
+            for tree in model.estimators_:
+                # Add missing attributes that newer sklearn expects
+                if not hasattr(tree, 'monotonic_cst'):
+                    tree.monotonic_cst = None
+                if not hasattr(tree, 'missing_values_in_feature_mask'):
+                    tree.missing_values_in_feature_mask = None
         
         # DEBUG: Check what model was loaded
         st.write("🔍 **MODEL FILE INFO:**")
         st.write(f"- File size: {os.path.getsize('model_rf_v2.joblib') / (1024*1024):.2f} MB")
-        st.write(f"- Model type: {type(model).__name__}")
-        
-        if hasattr(model, 'n_estimators'):
-            st.write(f"- n_estimators: {model.n_estimators}")
-        if hasattr(model, 'max_depth'):
-            st.write(f"- max_depth: {model.max_depth}")
+        st.write(f"- n_estimators: {model.n_estimators}")
+        st.write(f"- max_depth: {model.max_depth}")
         
         # Test with known input
         test_df = pd.DataFrame({feat: [0.0] for feat in features})
@@ -94,27 +68,18 @@ def load_model_and_data():
         test_df.at[0, 'total_hospital_visits'] = 3.0
         test_df.at[0, 'number_emergency'] = 1.0
         test_df.at[0, 'age_numeric'] = 58.0
+        test_df.at[0, 'gender_0'] = 1.0
+        test_df.at[0, 'admission_type_0'] = 1.0
+        test_df.at[0, 'discharge_disposition_0'] = 1.0
+        test_df.at[0, 'age_group_1'] = 1.0
         
-        # Set some one-hot features
-        if 'gender_0' in features:
-            test_df.at[0, 'gender_0'] = 1.0
-        if 'admission_type_0' in features:
-            test_df.at[0, 'admission_type_0'] = 1.0
-        if 'discharge_disposition_0' in features:
-            test_df.at[0, 'discharge_disposition_0'] = 1.0
-        if 'age_group_1' in features:
-            test_df.at[0, 'age_group_1'] = 1.0
+        test_prob = model.predict_proba(test_df)[0, 1]
+        st.write(f"- Test prediction: {test_prob:.4f} ({test_prob*100:.1f}%)")
         
-        try:
-            test_prob = model.predict_proba(test_df)[0, 1]
-            st.write(f"- Test prediction: {test_prob:.4f} ({test_prob*100:.1f}%)")
-            
-            if test_prob > 1:
-                st.error("⚠️ WRONG MODEL FILE IS DEPLOYED!")
-            else:
-                st.success(f"✅ Model test successful")
-        except Exception as e:
-            st.warning(f"⚠️ Test prediction failed: {e}")
+        if test_prob > 1:
+            st.error("⚠️ WRONG MODEL FILE IS DEPLOYED!")
+        else:
+            st.success(f"✅ Correct model loaded")
         
         st.success(f"✅ Model loaded: {len(features)} features, threshold={metadata.get('model_info', {}).get('optimal_threshold', 0.48):.2f}")
         
@@ -125,61 +90,8 @@ def load_model_and_data():
         import traceback
         st.code(traceback.format_exc())
         return None, [], {}
-
-# Load the model
 model, features, metadata = load_model_and_data()
 threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
-
-# ALTERNATIVE FIX: If the above doesn't work, use this function instead
-def load_model_compatibly():
-    """Alternative method using pickle directly"""
-    try:
-        import pickle
-        
-        # Load with pickle and custom handling
-        with open('model_rf_v2.joblib', 'rb') as f:
-            # Create a custom unpickler
-            class CustomUnpickler(pickle.Unpickler):
-                def find_class(self, module, name):
-                    # Intercept the tree module
-                    if module == 'sklearn.tree._classes' and name == 'DecisionTreeClassifier':
-                        import sklearn.tree
-                        
-                        # Create a patched version
-                        class PatchedDecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
-                            def __reduce__(self):
-                                # Get the parent's reduce
-                                reduced = super().__reduce__()
-                                # Remove monotonic_cst from args if present
-                                if len(reduced) >= 3:
-                                    args, state, *rest = reduced
-                                    if isinstance(args, dict) and 'monotonic_cst' in args:
-                                        args = args.copy()
-                                        args.pop('monotonic_cst', None)
-                                    reduced = (args, state, *rest)
-                                return reduced
-                        
-                        return PatchedDecisionTreeClassifier
-                    
-                    return super().find_class(module, name)
-            
-            unpickler = CustomUnpickler(f)
-            model = unpickler.load()
-            
-        # Load other files normally
-        features = joblib.load("features_v2.pkl")
-        metadata = joblib.load("metadata_v2.pkl")
-        
-        return model, features, metadata
-    except Exception as e:
-        st.error(f"Alternative loading failed: {e}")
-        return None, [], {}
-
-# If model failed to load, try alternative method
-if model is None:
-    st.warning("Trying alternative loading method...")
-    model, features, metadata = load_model_compatibly()
-    threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
 
 # Prediction function - BULLETPROOF VERSION
 def predict_readmission_risk(user_inputs_dict, model, feature_list):
@@ -209,16 +121,12 @@ def predict_readmission_risk(user_inputs_dict, model, feature_list):
         # Gender (one-hot)
         gender_map = {"Female": 0, "Male": 1, "Unknown/Other": 2}
         gender_idx = gender_map[user_inputs_dict['gender']]
-        gender_col = f'gender_{gender_idx}'
-        if gender_col in input_data.columns:
-            input_data.at[0, gender_col] = 1.0
+        input_data.at[0, f'gender_{gender_idx}'] = 1.0
         
         # Admission type (one-hot)
         admission_types = ["Emergency", "Urgent", "Elective", "Newborn", "Trauma Center", "Not Mapped", "NULL", "Not Available"]
         admission_idx = admission_types.index(user_inputs_dict['admission_type'])
-        admission_col = f'admission_type_{admission_idx}'
-        if admission_col in input_data.columns:
-            input_data.at[0, admission_col] = 1.0
+        input_data.at[0, f'admission_type_{admission_idx}'] = 1.0
         
         # Discharge disposition (one-hot)
         discharge_types = [
@@ -242,16 +150,35 @@ def predict_readmission_risk(user_inputs_dict, model, feature_list):
             "Discharged/transferred to an inpatient rehabilitation facility"
         ]
         discharge_idx = discharge_types.index(user_inputs_dict['discharge_disposition'])
-        discharge_col = f'discharge_disposition_{discharge_idx}'
-        if discharge_col in input_data.columns:
-            input_data.at[0, discharge_col] = 1.0
+        input_data.at[0, f'discharge_disposition_{discharge_idx}'] = 1.0
         
         # Age group (one-hot)
         age_groups = ["18-45", "46-65", "66-85", "86+"]
         age_group_idx = age_groups.index(user_inputs_dict['age_group'])
-        age_col = f'age_group_{age_group_idx}'
-        if age_col in input_data.columns:
-            input_data.at[0, age_col] = 1.0
+        input_data.at[0, f'age_group_{age_group_idx}'] = 1.0
+        
+        # DEBUG INFO - ENHANCED
+        with st.expander("🔍 Debug Information"):
+            st.write(f"**DataFrame shape:** {input_data.shape}")
+            st.write(f"**DataFrame dtypes:** {input_data.dtypes.unique()}")
+            st.write(f"**Model expects:** {model.n_features_in_} features")
+            st.write(f"**Feature order matches:** {list(input_data.columns) == list(model.feature_names_in_)}")
+            st.write(f"**Non-zero values:** {(input_data != 0).sum().sum()}")
+            st.write(f"**Value range:** {input_data.min().min():.2f} to {input_data.max().max():.2f}")
+            
+            st.write("**First 10 column names (ours vs model):**")
+            comparison = pd.DataFrame({
+                'Our columns': list(input_data.columns)[:10],
+                'Model expects': list(model.feature_names_in_)[:10]
+            })
+            st.dataframe(comparison)
+            
+            st.write("**Non-zero features:**")
+            non_zero = input_data.loc[0, input_data.loc[0] != 0]
+            st.dataframe(non_zero)
+            
+            st.write("**First 10 values being sent to model:**")
+            st.write(input_data.iloc[0, :10].tolist())
         
         # Ensure correct data type
         input_data = input_data.astype(float)
@@ -262,6 +189,8 @@ def predict_readmission_risk(user_inputs_dict, model, feature_list):
         # Validate
         if not (0 <= probability <= 1):
             st.error(f"❌ INVALID PROBABILITY: {probability}")
+            st.write("Input data summary:")
+            st.dataframe(input_data.describe())
             return None
         
         return probability
