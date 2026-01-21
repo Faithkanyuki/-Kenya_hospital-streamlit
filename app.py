@@ -40,9 +40,9 @@ def load_model_and_data():
         import joblib
         import os
         
-        model = joblib.load("model_rf_v2.joblib")
-        features = joblib.load("features_v2.pkl")
-        metadata = joblib.load("metadata_v2.pkl")
+        model = joblib.load("hospital_rf_20260121.joblib")
+        features = joblib.load("hospital_features_20260121.pkl")
+        metadata = joblib.load("hospital_metadata_20260121.pkl")
         
         # CRITICAL FIX: Patch trees for sklearn version mismatch
         st.write("🔧 Patching model for compatibility...")
