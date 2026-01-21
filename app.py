@@ -6,6 +6,45 @@ import sys
 
 warnings.filterwarnings('ignore')
 
+# ========== MONKEY PATCH FOR SCIKIT-LEARN VERSION MISMATCH ==========
+import sklearn
+import sklearn.tree
+import sklearn.tree._tree
+
+# Fix for 'monotonic_cst' attribute error when loading models
+# saved with older scikit-learn versions in newer environments
+if hasattr(sklearn.tree._tree, 'Tree'):
+    if not hasattr(sklearn.tree._tree.Tree, 'monotonic_cst'):
+        # Add dummy attribute to avoid AttributeError
+        sklearn.tree._tree.Tree.monotonic_cst = None
+
+# Patch joblib.load to handle the model loading
+import joblib
+original_joblib_load = joblib.load
+
+def patched_joblib_load(filename):
+    """Custom joblib.load that handles scikit-learn version mismatch"""
+    try:
+        # Apply patch before loading
+        if hasattr(sklearn.tree._tree, 'Tree') and not hasattr(sklearn.tree._tree.Tree, 'monotonic_cst'):
+            sklearn.tree._tree.Tree.monotonic_cst = None
+        
+        return original_joblib_load(filename)
+    except AttributeError as e:
+        if 'monotonic_cst' in str(e):
+            st.warning("⚠️ Applying compatibility patch for model loading...")
+            # Force patch and retry
+            if hasattr(sklearn.tree._tree, 'Tree'):
+                sklearn.tree._tree.Tree.monotonic_cst = None
+            
+            # Try again with patched environment
+            return original_joblib_load(filename)
+        raise
+
+# Replace joblib.load with our patched version
+joblib.load = patched_joblib_load
+# ========== END MONKEY PATCH ==========
+
 # Page setup
 st.set_page_config(
     page_title="Kenya Hospital Readmission Predictor",
@@ -39,6 +78,11 @@ def load_model_and_data():
     try:
         import joblib
         import os
+        
+        # Double-check patch is applied
+        import sklearn.tree._tree
+        if hasattr(sklearn.tree._tree, 'Tree') and not hasattr(sklearn.tree._tree.Tree, 'monotonic_cst'):
+            sklearn.tree._tree.Tree.monotonic_cst = None
         
         model = joblib.load("model_rf_v2.joblib")  # Changed
         features = joblib.load("features_v2.pkl")   # Changed
@@ -77,6 +121,8 @@ def load_model_and_data():
         
     except Exception as e:
         st.error(f"❌ Error loading model: {e}")
+        import traceback
+        st.error(f"Full traceback: {traceback.format_exc()}")
         return None, [], {}
 model, features, metadata = load_model_and_data()
 threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
