@@ -46,27 +46,36 @@ def load_model_and_data():
         import joblib
         import os
         
+        # ---------------- LOAD FILES ----------------
         model = joblib.load("hospital_rf_20260121_streamlit.joblib")
-        features = joblib.load("hospital_features_20260121.pkl")
+        features = joblib.load("model_features.joblib")
         metadata = joblib.load("hospital_metadata_20260121.pkl")
-        
-        # CRITICAL FIX: Patch trees for sklearn version mismatch
+
+        # ---------------- HARD VALIDATION (ADD HERE) ----------------
+        if hasattr(model, "feature_names_in_"):
+            if list(features) != list(model.feature_names_in_):
+                st.error("❌ FEATURE SCHEMA MISMATCH — Deployment blocked")
+                st.stop()
+            else:
+                st.success("✅ Feature schema matches training exactly")
+        # ------------------------------------------------------------
+
+        # ---------------- PATCH FOR SKLEARN ----------------
         st.write("🔧 Patching model for compatibility...")
         if hasattr(model, 'estimators_'):
             for tree in model.estimators_:
-                # Add missing attributes that newer sklearn expects
                 if not hasattr(tree, 'monotonic_cst'):
                     tree.monotonic_cst = None
                 if not hasattr(tree, 'missing_values_in_feature_mask'):
                     tree.missing_values_in_feature_mask = None
-        
-        # DEBUG: Check what model was loaded
+
+        # ---------------- MODEL INFO ----------------
         st.write("🔍 **MODEL FILE INFO:**")
         st.write(f"- File size: {os.path.getsize('hospital_rf_20260121_streamlit.joblib') / (1024*1024):.2f} MB")
         st.write(f"- n_estimators: {model.n_estimators}")
         st.write(f"- max_depth: {model.max_depth}")
-        
-        # Test with known input
+
+        # ---------------- TEST PREDICTION ----------------
         test_df = pd.DataFrame({feat: [0.0] for feat in features})
         test_df.at[0, 'time_in_hospital'] = 7.0
         test_df.at[0, 'num_lab_procedures'] = 45.0
@@ -78,24 +87,23 @@ def load_model_and_data():
         test_df.at[0, 'admission_type_0'] = 1.0
         test_df.at[0, 'discharge_disposition_0'] = 1.0
         test_df.at[0, 'age_group_1'] = 1.0
-        
+
         test_prob = model.predict_proba(test_df)[0, 1]
         st.write(f"- Test prediction: {test_prob:.4f} ({test_prob*100:.1f}%)")
-        
-        if test_prob > 1:
-            st.error("⚠️ WRONG MODEL FILE IS DEPLOYED!")
-        else:
-            st.success(f"✅ Correct model loaded")
-        
-        st.success(f"✅ Model loaded: {len(features)} features, threshold={metadata.get('model_info', {}).get('optimal_threshold', 0.48):.2f}")
-        
+
+        st.success(
+            f"✅ Model loaded: {len(features)} features, "
+            f"threshold={metadata.get('model_info', {}).get('optimal_threshold', 0.48):.2f}"
+        )
+
         return model, features, metadata
-        
+
     except Exception as e:
         st.error(f"❌ Error loading model: {e}")
         import traceback
         st.code(traceback.format_exc())
         return None, [], {}
+
 model, features, metadata = load_model_and_data()
 threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
 
