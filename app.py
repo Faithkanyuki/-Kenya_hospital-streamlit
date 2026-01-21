@@ -6,120 +6,6 @@ import sys
 
 warnings.filterwarnings('ignore')
 
-# ========== ROBUST MONKEY PATCH FOR SCIKIT-LEARN ==========
-try:
-    import sklearn
-    import sklearn.tree
-    
-    # Try different approaches to patch the missing attribute
-    def apply_sklearn_patch():
-        """Apply compatibility patch for scikit-learn version mismatch"""
-        try:
-            # Method 1: Try to patch _tree.Tree if it exists
-            if hasattr(sklearn.tree, '_tree'):
-                tree_module = sklearn.tree._tree
-                if hasattr(tree_module, 'Tree'):
-                    if not hasattr(tree_module.Tree, 'monotonic_cst'):
-                        tree_module.Tree.monotonic_cst = None
-                        st.sidebar.success("Applied patch: _tree.Tree.monotonic_cst")
-            
-            # Method 2: Try to patch DecisionTreeClassifier directly
-            if hasattr(sklearn.tree, 'DecisionTreeClassifier'):
-                # Save original method
-                original_init = sklearn.tree.DecisionTreeClassifier.__init__
-                
-                def patched_init(self, *args, **kwargs):
-                    # Remove monotonic_cst from kwargs if present
-                    kwargs.pop('monotonic_cst', None)
-                    return original_init(self, *args, **kwargs)
-                
-                sklearn.tree.DecisionTreeClassifier.__init__ = patched_init
-                
-                # Also patch set_params
-                original_set_params = sklearn.tree.DisionTreeClassifier.set_params
-                
-                def patched_set_params(self, **params):
-                    params.pop('monotonic_cst', None)
-                    return original_set_params(self, **params)
-                
-                sklearn.tree.DecisionTreeClassifier.set_params = patched_set_params
-                st.sidebar.success("Applied patch: DecisionTreeClassifier")
-            
-            # Method 3: Patch at the module level
-            import types
-            if not hasattr(sklearn.tree, 'monotonic_cst'):
-                sklearn.tree.monotonic_cst = None
-            
-            return True
-            
-        except Exception as e:
-            st.sidebar.warning(f"Partial patch applied: {e}")
-            return False
-    
-    # Apply the patch
-    apply_sklearn_patch()
-    
-except ImportError:
-    st.sidebar.error("scikit-learn not installed")
-except Exception as e:
-    st.sidebar.warning(f"Patch error (non-fatal): {e}")
-
-# Patch joblib.load to handle unpickling errors
-try:
-    import joblib
-    import pickle
-    
-    original_load = joblib.load
-    
-    def safe_joblib_load(filename, mmap_mode=None):
-        """Safe wrapper for joblib.load that handles version mismatches"""
-        try:
-            return original_load(filename, mmap_mode=mmap_mode)
-        except (AttributeError, TypeError) as e:
-            if 'monotonic_cst' in str(e):
-                # Try to load with custom unpickler
-                with open(filename, 'rb') as f:
-                    # Create a custom unpickler that ignores the problematic attribute
-                    unpickler = pickle.Unpickler(f)
-                    
-                    # Monkey patch during unpickling
-                    import sys
-                    original_find_class = unpickler.find_class
-                    
-                    def custom_find_class(module, name):
-                        try:
-                            return original_find_class(module, name)
-                        except AttributeError as attr_error:
-                            if 'monotonic_cst' in str(attr_error):
-                                # If it's the monotonic_cst error, create a dummy class
-                                if module == 'sklearn.tree._tree' and name == 'Tree':
-                                    # Create a dummy Tree class
-                                    class DummyTree:
-                                        monotonic_cst = None
-                                        def __getattr__(self, name):
-                                            return None
-                                    return DummyTree
-                            raise
-                    
-                    unpickler.find_class = custom_find_class
-                    result = unpickler.load()
-                    
-                    # Apply additional patches to the loaded object if needed
-                    if hasattr(result, '_tree'):
-                        tree_obj = result._tree
-                        if hasattr(tree_obj, '__dict__'):
-                            tree_obj.__dict__.pop('monotonic_cst', None)
-                    
-                    return result
-            raise
-    
-    # Replace joblib.load
-    joblib.load = safe_joblib_load
-    
-except ImportError:
-    pass
-# ========== END MONKEY PATCH ==========
-
 # Page setup
 st.set_page_config(
     page_title="Kenya Hospital Readmission Predictor",
@@ -127,17 +13,13 @@ st.set_page_config(
 )
 
 st.title("Kenya Hospital Readmission Risk Predictor")
+
 st.write("Clinical tool for predicting patient readmission risk")
 
-# Add version compatibility warning
-with st.sidebar:
-    st.info("**Version Info**")
-    try:
-        import sklearn
-        st.write(f"scikit-learn: {sklearn.__version__}")
-    except:
-        pass
-    st.write(f"Python: {sys.version.split()[0]}")
+# Add this right after your title
+if st.button(" Clear Cache and Reload Model"):
+    st.cache_resource.clear()
+    st.rerun()
 
 # System info
 with st.expander("System Information", expanded=False):
@@ -150,134 +32,54 @@ with st.expander("System Information", expanded=False):
     st.write(f"**pandas version:** {pd.__version__}")
     st.write(f"**numpy version:** {np.__version__}")
 
-# Load model with error handling
+# Load model
 @st.cache_resource
 def load_model_and_data():
-    """Load model, features, and metadata with robust error handling"""
+    """Load model, features, and metadata"""
     try:
+        import joblib
         import os
         
-        # First check if files exist
-        required_files = ["model_rf_v2.joblib", "features_v2.pkl", "metadata_v2.pkl"]
-        for file in required_files:
-            if not os.path.exists(file):
-                st.error(f"Missing file: {file}")
-                return None, [], {}
-        
-        # Try to load with multiple approaches
-        model = None
-        features = []
-        metadata = {}
-        
-        # Approach 1: Try direct joblib load
-        try:
-            import joblib
-            model = joblib.load("model_rf_v2.joblib")
-            features = joblib.load("features_v2.pkl")
-            metadata = joblib.load("metadata_v2.pkl")
-        except Exception as e1:
-            st.warning(f"First load attempt failed: {e1}")
-            
-            # Approach 2: Try with custom unpickler
-            try:
-                import pickle
-                
-                # Load model
-                with open("model_rf_v2.joblib", 'rb') as f:
-                    unpickler = pickle.Unpickler(f)
-                    # Patch find_class to handle sklearn issues
-                    original_find_class = unpickler.find_class
-                    def patched_find_class(module, name):
-                        try:
-                            return original_find_class(module, name)
-                        except AttributeError:
-                            # Create dummy classes for missing attributes
-                            if 'monotonic_cst' in str(sys.exc_info()[1]):
-                                # Return a dummy object
-                                class DummyClass:
-                                    def __init__(self):
-                                        self.monotonic_cst = None
-                                    def __getattr__(self, name):
-                                        return None
-                                return DummyClass()
-                            raise
-                    unpickler.find_class = patched_find_class
-                    model = unpickler.load()
-                
-                # Load features and metadata normally
-                with open("features_v2.pkl", 'rb') as f:
-                    features = pickle.load(f)
-                with open("metadata_v2.pkl", 'rb') as f:
-                    metadata = pickle.load(f)
-                    
-            except Exception as e2:
-                st.error(f"All load attempts failed: {e2}")
-                return None, [], {}
-        
-        # Verify model loaded
-        if model is None:
-            st.error("Model failed to load")
-            return None, [], {}
+        model = joblib.load("model_rf_v2.joblib")  # Changed
+        features = joblib.load("features_v2.pkl")   # Changed
+        metadata = joblib.load("metadata_v2.pkl")   # Changed
         
         # DEBUG: Check what model was loaded
         st.write("🔍 **MODEL FILE INFO:**")
         st.write(f"- File size: {os.path.getsize('model_rf_v2.joblib') / (1024*1024):.2f} MB")
+        st.write(f"- n_estimators: {model.n_estimators}")
+        st.write(f"- max_depth: {model.max_depth}")
         
-        # Try to get model attributes safely
-        try:
-            st.write(f"- n_estimators: {model.n_estimators}")
-        except:
-            st.write("- n_estimators: Unknown")
+        # Test with known input
+        test_df = pd.DataFrame({feat: [0.0] for feat in features})
+        test_df.at[0, 'time_in_hospital'] = 7.0
+        test_df.at[0, 'num_lab_procedures'] = 45.0
+        test_df.at[0, 'num_medications'] = 12.0
+        test_df.at[0, 'total_hospital_visits'] = 3.0
+        test_df.at[0, 'number_emergency'] = 1.0
+        test_df.at[0, 'age_numeric'] = 58.0
+        test_df.at[0, 'gender_0'] = 1.0
+        test_df.at[0, 'admission_type_0'] = 1.0
+        test_df.at[0, 'discharge_disposition_0'] = 1.0
+        test_df.at[0, 'age_group_1'] = 1.0
         
-        try:
-            st.write(f"- max_depth: {model.max_depth}")
-        except:
-            st.write("- max_depth: Unknown")
+        test_prob = model.predict_proba(test_df)[0, 1]
+        st.write(f"- Test prediction: {test_prob:.4f} ({test_prob*100:.1f}%)")
         
-        # Test prediction if possible
-        try:
-            # Create simple test input
-            if features and len(features) > 0:
-                test_df = pd.DataFrame({feat: [0.0] for feat in features})
-                # Set a few values
-                for col in ['time_in_hospital', 'num_lab_procedures', 'num_medications']:
-                    if col in test_df.columns:
-                        test_df.at[0, col] = 1.0
-                
-                test_prob = model.predict_proba(test_df)[0, 1]
-                st.write(f"- Test prediction: {test_prob:.4f}")
-                
-                if test_prob > 1:
-                    st.error("⚠️ Model output out of range!")
-                else:
-                    st.success("✅ Model loaded and test prediction successful")
-        except Exception as e:
-            st.warning(f"Test prediction failed (non-critical): {e}")
+        if test_prob > 1:
+            st.error("⚠️ WRONG MODEL FILE IS DEPLOYED!")
+        else:
+            st.success(f"✅ Correct model loaded")
         
-        st.success(f"✅ Model loaded: {len(features)} features")
+        st.success(f"✅ Model loaded: {len(features)} features, threshold={metadata.get('model_info', {}).get('optimal_threshold', 0.48):.2f}")
         
         return model, features, metadata
         
     except Exception as e:
-        st.error(f"❌ Error in load_model_and_data: {e}")
-        import traceback
-        with st.expander("Show full traceback"):
-            st.code(traceback.format_exc())
+        st.error(f"❌ Error loading model: {e}")
         return None, [], {}
-
-# Load the model
 model, features, metadata = load_model_and_data()
-
-# Set default threshold if metadata not loaded
-if metadata:
-    threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
-else:
-    threshold = 0.48
-    st.warning(f"Using default threshold: {threshold}")
-
-# [REST OF YOUR CODE REMAINS THE SAME - Prediction function, UI, etc.]
-# Continue with your existing prediction function and UI code...
-# I'll continue from line 200 where your predict_readmission_risk function starts
+threshold = metadata.get("model_info", {}).get("optimal_threshold", 0.48)
 
 # Prediction function - BULLETPROOF VERSION
 def predict_readmission_risk(user_inputs_dict, model, feature_list):
@@ -347,30 +149,21 @@ def predict_readmission_risk(user_inputs_dict, model, feature_list):
         with st.expander("🔍 Debug Information"):
             st.write(f"**DataFrame shape:** {input_data.shape}")
             st.write(f"**DataFrame dtypes:** {input_data.dtypes.unique()}")
-            
-            # Safely check model attributes
-            try:
-                st.write(f"**Model expects:** {model.n_features_in_} features")
-            except:
-                st.write("**Model expects:** Unknown features")
-            
-            try:
-                st.write(f"**Feature order matches:** {list(input_data.columns) == list(model.feature_names_in_)}")
-            except:
-                st.write("**Feature order:** Cannot verify")
-            
+            st.write(f"**Model expects:** {model.n_features_in_} features")
+            st.write(f"**Feature order matches:** {list(input_data.columns) == list(model.feature_names_in_)}")
             st.write(f"**Non-zero values:** {(input_data != 0).sum().sum()}")
             st.write(f"**Value range:** {input_data.min().min():.2f} to {input_data.max().max():.2f}")
             
-            st.write("**First 10 column names:**")
-            st.write(list(input_data.columns)[:10])
+            st.write("**First 10 column names (ours vs model):**")
+            comparison = pd.DataFrame({
+                'Our columns': list(input_data.columns)[:10],
+                'Model expects': list(model.feature_names_in_)[:10]
+            })
+            st.dataframe(comparison)
             
             st.write("**Non-zero features:**")
             non_zero = input_data.loc[0, input_data.loc[0] != 0]
-            if len(non_zero) > 0:
-                st.dataframe(non_zero)
-            else:
-                st.write("No non-zero features")
+            st.dataframe(non_zero)
             
             st.write("**First 10 values being sent to model:**")
             st.write(input_data.iloc[0, :10].tolist())
@@ -393,8 +186,7 @@ def predict_readmission_risk(user_inputs_dict, model, feature_list):
     except Exception as e:
         st.error(f"Prediction error: {e}")
         import traceback
-        with st.expander("Show error details"):
-            st.code(traceback.format_exc())
+        st.code(traceback.format_exc())
         return None
 
 # UI
@@ -519,27 +311,22 @@ if st.button("Predict Readmission Risk", type="primary", use_container_width=Tru
 with st.sidebar:
     st.title("Model Information")
     
-    if metadata:
-        perf_metrics = metadata.get("performance_metrics", {})
-        
-        st.write("**Performance Metrics:**")
-        st.metric("Recall", f"{perf_metrics.get('recall', 0.690):.1%}")
-        st.metric("Precision", f"{perf_metrics.get('precision', 0.154):.1%}")
-        st.metric("F1-Score", f"{perf_metrics.get('f1_score', 0.252):.3f}")
-        st.metric("ROC AUC", f"{perf_metrics.get('roc_auc', 0.660):.3f}")
-        
-        st.divider()
-        
-        st.write("**Model Details:**")
-        model_info = metadata.get("model_info", {})
-        st.write(f"• Algorithm: Random Forest")
-        st.write(f"• Features: {len(features)}")
-        st.write(f"• n_estimators: {model_info.get('n_estimators', 285)}")
-        st.write(f"• max_depth: {model_info.get('max_depth', 5)}")
-    else:
-        st.warning("Metadata not loaded")
-        st.write(f"• Features: {len(features)}")
-        st.write(f"• Threshold: {threshold}")
+    perf_metrics = metadata.get("performance_metrics", {})
+    
+    st.write("**Performance Metrics:**")
+    st.metric("Recall", f"{perf_metrics.get('recall', 0.690):.1%}")
+    st.metric("Precision", f"{perf_metrics.get('precision', 0.154):.1%}")
+    st.metric("F1-Score", f"{perf_metrics.get('f1_score', 0.252):.3f}")
+    st.metric("ROC AUC", f"{perf_metrics.get('roc_auc', 0.660):.3f}")
+    
+    st.divider()
+    
+    st.write("**Model Details:**")
+    model_info = metadata.get("model_info", {})
+    st.write(f"• Algorithm: Random Forest")
+    st.write(f"• Features: {len(features)}")
+    st.write(f"• n_estimators: {model_info.get('n_estimators', 285)}")
+    st.write(f"• max_depth: {model_info.get('max_depth', 5)}")
     
     st.divider()
     
