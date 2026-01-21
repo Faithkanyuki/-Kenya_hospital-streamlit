@@ -47,8 +47,10 @@ def load_model_and_data():
         
         # ---------------- LOAD FILES ----------------
         model = joblib.load("hospital_rf_20260121_streamlit.joblib")
-        features = joblib.load("model_features.joblib")
+        features = joblib.load("hospital_features_20260121.pkl")
         metadata = joblib.load("hospital_metadata_20260121.pkl")
+        
+      
 
         # ---------------- HARD VALIDATION (ADD HERE) ----------------
         if hasattr(model, "feature_names_in_"):
