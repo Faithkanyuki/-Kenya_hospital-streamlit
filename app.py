@@ -62,7 +62,7 @@ def load_model_and_data():
         
         # DEBUG: Check what model was loaded
         st.write("🔍 **MODEL FILE INFO:**")
-        st.write(f"- File size: {os.path.getsize('model_rf_v2.joblib') / (1024*1024):.2f} MB")
+        st.write(f"- File size: {os.path.getsize('hospital_rf_20260121.joblib') / (1024*1024):.2f} MB")
         st.write(f"- n_estimators: {model.n_estimators}")
         st.write(f"- max_depth: {model.max_depth}")
         
