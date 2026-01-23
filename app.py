@@ -686,5 +686,5 @@ if st.sidebar.checkbox("🛠️ Debug Mode", value=False):
     if model:
         st.sidebar.write("**Model attributes:**")
         st.sidebar.write(f"- n_features_in_: {model.n_features_in_}")
-        st.sidebar.write(f- n_estimators: {model.n_estimators})
+        st.sidebar.write(f"- n_estimators: {model.n_estimators}")
         st.sidebar.write(f"- max_depth: {model.max_depth}")
