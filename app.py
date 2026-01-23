@@ -357,97 +357,115 @@ def predict_readmission_risk(user_inputs):
 # ============================================================================
 # PAGE RENDERING FUNCTIONS
 # ============================================================================
-def render_about():
-    """About and information page"""
-    # YOU NEED THIS WRAPPER
+def render_dashboard():
+    """Main dashboard page"""
     st.markdown("""
     <div class="glass-card">
-        <h2 class="glass-card-header">ℹ️ About This Project</h2>
-        
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; margin: 2rem 0;">
-            <div>
-                <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Project Overview</h3>
-                <p style="color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
-                    The Kenya Hospital Readmission Predictor is a clinical decision support system 
-                    developed to address the challenge of preventable hospital readmissions in the 
-                    Kenyan healthcare context. By leveraging machine learning and historical patient data, 
-                    this tool helps healthcare providers identify high-risk patients for targeted 
-                    interventions.
-                </p>
-
-                <h4 style="color: #334155; margin-bottom: 1rem;">🎯 Project Objectives</h4>
-                <ul style="color: #475569; margin-bottom: 1.5rem;">
-                    <li>Reduce preventable 30-day readmissions by 30%</li>
-                    <li>Optimize resource allocation for high-risk patients</li>
-                    <li>Standardize risk assessment across healthcare facilities</li>
-                    <li>Provide evidence-based clinical decision support</li>
-                    <li>Improve patient outcomes through early intervention</li>
-                </ul>
-            </div>
-
-            <div>
-                <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Technical Stack</h3>
-                <div style="background: #f8fafc; padding: 1.5rem; border-radius: 10px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">🐍</div>
-                        <div>
-                            <strong>Python 3.9+</strong>
-                            <div style="color: #64748b; font-size: 0.9rem;">Core programming</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">🤖</div>
-                        <div>
-                            <strong>Scikit-learn</strong>
-                            <div style="color: #64748b; font-size: 0.9rem;">Machine learning</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">📊</div>
-                        <div>
-                            <strong>Streamlit</strong>
-                            <div style="color: #64748b; font-size: 0.9rem;">Web application</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">🏥</div>
-                        <div>
-                            <strong>Kenyan EHR Data</strong>
-                            <div style="color: #64748b; font-size: 0.9rem;">81,412 patient records</div>
-                        </div>
-                    </div>
-                </div>
+        <h2 class="glass-card-header">🏠 Welcome to Kenya Hospital Readmission Predictor</h2>
+        <p style="color: #475569; margin-bottom: 1.5rem;">
+            A clinical decision support system for identifying patients at high risk of 30-day hospital readmission.
+            This tool helps healthcare providers prioritize interventions and optimize resource allocation.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Key Metrics
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card">
+            <div style="text-align: center;">
+                <div style="font-size: 2.5rem; color: #1a73e8; margin-bottom: 0.5rem;">📈</div>
+                <h3 style="color: #334155; margin-bottom: 0.5rem;">Model Accuracy</h3>
+                <div style="font-size: 2rem; font-weight: 700; color: #1a73e8;">69%</div>
+                <div style="color: #64748b; font-size: 0.9rem;">Recall for high-risk patients</div>
             </div>
         </div>
-
-        <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 10px; border: 1px solid #bae6fd; margin-top: 2rem;">
-            <h4 style="color: #0369a1; margin-bottom: 1rem;">👥 Team & Contact</h4>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; color: #1a73e8; margin-bottom: 0.5rem;">📧</div>
-                    <strong>Clinical Support</strong>
-                    <div style="font-size: 0.9rem; color: #64748b;">
-                        clinical@kenyahospital.ke
-                    </div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; color: #00bfa5; margin-bottom: 0.5rem;">🛠️</div>
-                    <strong>Technical Support</strong>
-                    <div style="font-size: 0.9rem; color: #64748b;">
-                        tech@kenyahospital.ke
-                    </div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; color: #2e7d32; margin-bottom: 0.5rem;">📋</div>
-                    <strong>Project Management</strong>
-                    <div style="font-size: 0.9rem; color: #64748b;">
-                        pm@kenyahospital.ke
-                    </div>
-                </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="metric-card">
+            <div style="text-align: center;">
+                <div style="font-size: 2.5rem; color: #00bfa5; margin-bottom: 0.5rem;">🏥</div>
+                <h3 style="color: #334155; margin-bottom: 0.5rem;">Patients Analyzed</h3>
+                <div style="font-size: 2rem; font-weight: 700; color: #00bfa5;">81,412</div>
+                <div style="color: #64748b; font-size: 0.9rem;">Kenyan hospital records</div>
             </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="metric-card">
+            <div style="text-align: center;">
+                <div style="font-size: 2.5rem; color: #2e7d32; margin-bottom: 0.5rem;">🎯</div>
+                <h3 style="color: #334155; margin-bottom: 0.5rem;">Risk Threshold</h3>
+                <div style="font-size: 2rem; font-weight: 700; color: #2e7d32;">48%</div>
+                <div style="color: #64748b; font-size: 0.9rem;">Clinical decision boundary</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Quick Start Section
+    st.markdown("""
+    <div class="glass-card" style="margin-top: 2rem;">
+        <h3 style="color: #1e3a8a; margin-bottom: 1.5rem;">🚀 Quick Start Guide</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2rem;">
+            <div style="text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 10px;">
+                <div style="font-size: 3rem; color: #1a73e8; margin-bottom: 1rem;">1️⃣</div>
+                <h4 style="color: #334155; margin-bottom: 0.5rem;">Navigate to Assessment</h4>
+                <p style="color: #64748b; font-size: 0.9rem;">
+                    Click on "📋 Patient Assessment" in the sidebar to begin
+                </p>
+            </div>
+            
+            <div style="text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 10px;">
+                <div style="font-size: 3rem; color: #1a73e8; margin-bottom: 1rem;">2️⃣</div>
+                <h4 style="color: #334155; margin-bottom: 0.5rem;">Enter Patient Data</h4>
+                <p style="color: #64748b; font-size: 0.9rem;">
+                    Fill in clinical and demographic information in the form
+                </p>
+            </div>
+            
+            <div style="text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 10px;">
+                <div style="font-size: 3rem; color: #1a73e8; margin-bottom: 1rem;">3️⃣</div>
+                <h4 style="color: #334155; margin-bottom: 0.5rem;">Get Risk Prediction</h4>
+                <p style="color: #64748b; font-size: 0.9rem;">
+                    Click "Calculate Readmission Risk" for instant results
+                </p>
+            </div>
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 10px; border: 1px solid #bae6fd;">
+            <h4 style="color: #0369a1; margin-bottom: 1rem;">💡 Pro Tip</h4>
+            <p style="color: #475569; margin: 0;">
+                For accurate predictions, ensure all fields are filled with current patient data. 
+                The model is optimized for Kenyan healthcare context and considers local factors 
+                specific to the region.
+            </p>
         </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Recent Activity (placeholder)
+    st.markdown("""
+    <div class="glass-card" style="margin-top: 2rem;">
+        <h3 style="color: #1e3a8a; margin-bottom: 1.5rem;">📋 Recent Assessments</h3>
+        <div style="color: #475569; text-align: center; padding: 3rem 2rem;">
+            <div style="font-size: 4rem; color: #e2e8f0; margin-bottom: 1rem;">📊</div>
+            <p style="color: #94a3b8; font-size: 1.1rem;">
+                No recent assessments found. Start by creating a new patient assessment.
+            </p>
+            <p style="color: #64748b; margin-top: 1rem;">
+                Assessment history will appear here after you complete predictions
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 def render_assessment():
     """Patient assessment page"""
     st.markdown("""
