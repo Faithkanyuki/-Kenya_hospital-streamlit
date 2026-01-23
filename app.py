@@ -663,7 +663,7 @@ st.caption("""
 """)
 
 # ============================================================================
-# DEBUG MODE (Hidden by default)
+# DEBUG MODE (Hidden by default) - FIXED SYNTAX
 # ============================================================================
 if st.sidebar.checkbox("🛠️ Debug Mode", value=False):
     st.sidebar.subheader("Debug Information")
@@ -682,7 +682,7 @@ if st.sidebar.checkbox("🛠️ Debug Mode", value=False):
     for feat in list(features)[:10]:
         st.sidebar.write(f"- {feat}")
     
-    # Show model attributes
+    # Show model attributes - FIXED SYNTAX HERE
     if model:
         st.sidebar.write("**Model attributes:**")
         st.sidebar.write(f"- n_features_in_: {model.n_features_in_}")
