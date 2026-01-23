@@ -1193,7 +1193,7 @@ st.markdown("""
         <div style="text-align: right;">
             <div style="color: #64748b; font-size: 0.9rem;">
                 <strong>Version 1.0.0</strong><br>
-                {date}
+                January 23, 2026
             </div>
         </div>
     </div>
@@ -1205,4 +1205,4 @@ st.markdown("""
         </p>
     </div>
 </div>
-""".format(date=datetime.now().strftime("%B %d, %Y")), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
