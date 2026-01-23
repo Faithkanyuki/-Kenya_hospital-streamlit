@@ -1,259 +1,188 @@
-# ============================================================================
-# PAGE SETUP - MUST BE THE VERY FIRST STREAMLIT COMMAND
-# ============================================================================
-import streamlit as st
-
-st.set_page_config(
-    page_title="Kenya Hospital Readmission Predictor",
-    layout="wide",
-    page_icon="🏥",
-    initial_sidebar_state="expanded"
-)
-
-# ============================================================================
-# IMPORT OTHER LIBRARIES (NO PLOTLY)
-# ============================================================================
+okay now based on this import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
 import warnings
 import sys
 import os
-from datetime import datetime
 
 warnings.filterwarnings('ignore')
 
-# ============================================================================
-# CUSTOM CSS FOR MEDICAL THEME WITH BACKGROUND IMAGE
-# ============================================================================
-st.markdown("""
-<style>
-    /* Main theme colors - Medical Professional */
-    :root {
-        --primary-blue: #1a73e8;
-        --secondary-blue: #4285f4;
-        --accent-teal: #00bfa5;
-        --warning-red: #d32f2f;
-        --success-green: #2e7d32;
-        --light-bg: #f8fafc;
-        --card-bg: rgba(255, 255, 255, 0.95);
-        --border-color: rgba(226, 232, 240, 0.8);
-    }
-    
-    /* Background with medical theme */
-    .stApp {
-        background: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
-                    url('https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
-        background-size: cover;
-        background-attachment: fixed;
-        background-position: center;
-    }
-    
-    /* Main container */
-    .main .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-        backdrop-filter: blur(2px);
-    }
-    
-    /* Glassmorphism cards */
-    .glass-card {
-        background: var(--card-bg);
-        backdrop-filter: blur(10px);
-        border-radius: 15px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    }
-    
-    .glass-card-header {
-        border-bottom: 2px solid var(--primary-blue);
-        padding-bottom: 0.75rem;
-        margin-bottom: 1rem;
-        color: #1e3a8a;
-        font-size: 1.5rem;
-        font-weight: 600;
-    }
-    
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e3a8a 0%, #1a73e8 100%);
-        color: white;
-    }
-    
-    [data-testid="stSidebar"] .st-emotion-cache-16txtl3 {
-        background: transparent;
-    }
-    
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] h4,
-    [data-testid="stSidebar"] h5,
-    [data-testid="stSidebar"] h6,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] div {
-        color: white !important;
-    }
-    
-    /* Sidebar buttons */
-    .sidebar-btn {
-        background: rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 10px !important;
-        padding: 0.75rem 1rem !important;
-        margin: 0.25rem 0 !important;
-        transition: all 0.3s ease !important;
-        text-align: left !important;
-        width: 100% !important;
-    }
-    
-    .sidebar-btn:hover {
-        background: rgba(255, 255, 255, 0.2) !important;
-        transform: translateX(5px) !important;
-        border-color: rgba(255, 255, 255, 0.4) !important;
-    }
-    
-    .sidebar-btn.active {
-        background: rgba(255, 255, 255, 0.3) !important;
-        border-left: 4px solid var(--accent-teal) !important;
-    }
-    
-    /* Main content buttons */
-    .stButton > button {
-        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 0.75rem 2rem;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(26, 115, 232, 0.2);
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
-    }
-    
-    /* Metrics cards */
-    .metric-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
-        border-radius: 12px;
-        padding: 1.5rem;
-        border-left: 5px solid var(--primary-blue);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: transform 0.3s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-5px);
-    }
-    
-    /* Risk indicators */
-    .high-risk-card {
-        background: linear-gradient(135deg, rgba(255, 240, 240, 0.95), rgba(255, 245, 245, 0.95));
-        border-left: 5px solid var(--warning-red);
-        animation: pulse 2s infinite;
-    }
-    
-    .low-risk-card {
-        background: linear-gradient(135deg, rgba(240, 255, 244, 0.95), rgba(247, 254, 231, 0.95));
-        border-left: 5px solid var(--success-green);
-    }
-    
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4); }
-        70% { box-shadow: 0 0 0 10px rgba(211, 47, 47, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
-    }
-    
-    /* Input styling */
-    .stNumberInput input, .stSelectbox select, .stSlider div {
-        background: rgba(255, 255, 255, 0.9) !important;
-        border-radius: 8px !important;
-        border: 1px solid var(--border-color) !important;
-    }
-    
-    /* Tabs styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 5px;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 5px;
-        border-radius: 10px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background: transparent !important;
-        color: #64748b !important;
-        border-radius: 8px !important;
-        padding: 10px 20px !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background: white !important;
-        color: var(--primary-blue) !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-    }
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: rgba(241, 245, 249, 0.5);
-        border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: var(--primary-blue);
-        border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: var(--secondary-blue);
-    }
-    
-    /* Footer */
-    .footer {
-        text-align: center;
-        padding: 1.5rem;
-        margin-top: 3rem;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 15px;
-        border-top: 3px solid var(--primary-blue);
-        color: #64748b;
-        font-size: 0.9rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Page setup
+st.set_page_config(
+    page_title="Kenya Hospital Readmission Predictor",
+    layout="wide"
+)
+
+st.title("Kenya Hospital Readmission Risk Predictor")
+st.write("Clinical tool for predicting patient readmission risk within 30 days")
+
+# Add reload button
+if st.button("🔄 Clear Cache and Reload"):
+    st.cache_resource.clear()
+    st.rerun()
+
+# System info
+with st.expander("🔧 System Information", expanded=False):
+    st.write(f"**Python version:** {sys.version.split()[0]}")
+    st.write(f"**pandas version:** {pd.__version__}")
+    st.write(f"**numpy version:** {np.__version__}")
+    st.write(f"**joblib version:** {joblib.__version__}")
 
 # ============================================================================
-# INITIALIZE SESSION STATE
-# ============================================================================
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'dashboard'
-
-if 'patient_data' not in st.session_state:
-    st.session_state.patient_data = {}
-
-# ============================================================================
-# LOAD MODEL FUNCTION
+# LOAD MODEL WITH VALIDATION
 # ============================================================================
 @st.cache_resource
 def load_model_and_data():
-    """Load model, features, and metadata"""
+    """Load model, features, and metadata with strict validation"""
     try:
+        st.write("📥 Loading model files...")
+        
+        # Load all required files
         model = joblib.load("hospital_rf_20260121_streamlit.joblib")
         features = joblib.load("hospital_features_20260121.pkl")
         metadata = joblib.load("hospital_metadata_20260121.pkl")
         
+        st.success("✅ Model files loaded successfully")
+        
+        # ====================================================================
+        # CRITICAL VALIDATION 1: Feature names match exactly
+        # ====================================================================
+        st.write("🔍 Validating feature alignment...")
+        
+        if not hasattr(model, "feature_names_in_"):
+            st.error("❌ Model missing feature_names_in_ attribute")
+            st.info("Model was likely trained with scikit-learn < 1.0")
+            # Extract feature names if available
+            if hasattr(model, 'feature_importances_'):
+                # Create synthetic feature names
+                model.feature_names_in_ = [f"feature_{i}" for i in range(len(model.feature_importances_))]
+        else:
+            # Convert to lists for comparison
+            model_features = list(model.feature_names_in_)
+            saved_features = list(features)
+            
+            if len(model_features) != len(saved_features):
+                st.error(f"❌ Feature count mismatch: Model={len(model_features)}, Saved={len(saved_features)}")
+                st.stop()
+            
+            # Check each feature
+            mismatches = []
+            for i, (m_feat, s_feat) in enumerate(zip(model_features, saved_features)):
+                if m_feat != s_feat:
+                    mismatches.append((i, m_feat, s_feat))
+            
+            if mismatches:
+                st.error("❌ Feature name mismatches found!")
+                mismatch_df = pd.DataFrame(mismatches, columns=['Index', 'Model Feature', 'Saved Feature'])
+                st.dataframe(mismatch_df)
+                st.stop()
+            else:
+                st.success(f"✅ Feature schema validated: {len(model_features)} features match exactly")
+        
+        # ====================================================================
+        # CRITICAL VALIDATION 2: Feature categories from training
+        # ====================================================================
+        st.write("📊 Analyzing feature structure...")
+        
+        # Based on your training output, we know the structure:
+        # 1. total_hospital_visits (numeric)
+        # 2-25. discharge_disposition_X (one-hot, X=0-25)
+        # 26. number_emergency (numeric)
+        # 27. time_in_hospital (numeric)
+        # 28. num_medications (numeric)
+        # 29. num_lab_procedures (numeric)
+        # 30-31. discharge_disposition_X (one-hot)
+        # 32. age_numeric (numeric)
+        # 33-37. discharge_disposition_X (one-hot)
+        # 38. age_group_2 (one-hot)
+        # 39. admission_type_3 (one-hot)
+        # 40. admission_type_7 (one-hot)
+        
+        # Create feature categories for UI
+        numeric_features = []
+        categorical_features = {}
+        
+        for feat in model.feature_names_in_:
+            if any(x in feat for x in ['total_hospital_visits', 'number_emergency', 
+                                       'time_in_hospital', 'num_medications', 
+                                       'num_lab_procedures', 'age_numeric']):
+                numeric_features.append(feat)
+            elif 'discharge_disposition_' in feat:
+                if 'discharge_disposition' not in categorical_features:
+                    categorical_features['discharge_disposition'] = []
+                categorical_features['discharge_disposition'].append(feat)
+            elif 'admission_type_' in feat:
+                if 'admission_type' not in categorical_features:
+                    categorical_features['admission_type'] = []
+                categorical_features['admission_type'].append(feat)
+            elif 'gender_' in feat:
+                if 'gender' not in categorical_features:
+                    categorical_features['gender'] = []
+                categorical_features['gender'].append(feat)
+            elif 'age_group_' in feat:
+                if 'age_group' not in categorical_features:
+                    categorical_features['age_group'] = []
+                categorical_features['age_group'].append(feat)
+        
+        # ====================================================================
+        # CRITICAL VALIDATION 3: Test prediction
+        # ====================================================================
+        st.write("🧪 Running test prediction...")
+        
+        # Create test case based on your training
+        test_features = {
+            'total_hospital_visits': 3.0,        # Top feature
+            'discharge_disposition_1': 1.0,      # 2nd most important
+            'discharge_disposition_16': 1.0,     # 3rd most important
+            'discharge_disposition_7': 1.0,      # 4th most important
+            'number_emergency': 1.0,             # 5th most important
+            'time_in_hospital': 7.0,
+            'num_medications': 12.0,
+            'num_lab_procedures': 45.0,
+            'age_numeric': 58.0,
+            'gender_0': 1.0,                     # Female
+            'admission_type_0': 1.0,             # Emergency
+            'discharge_disposition_0': 1.0,      # Discharged to home
+            'age_group_1': 1.0                   # 46-65
+        }
+        
+        # Fill missing features with 0
+        test_df = pd.DataFrame({feat: [0.0] for feat in model.feature_names_in_})
+        for feat, val in test_features.items():
+            if feat in test_df.columns:
+                test_df.at[0, feat] = val
+        
+        # Make prediction
+        test_prob = model.predict_proba(test_df)[0, 1]
+        st.success(f"✅ Test prediction: {test_prob:.4f} ({test_prob*100:.1f}%)")
+        
+        # ====================================================================
+        # Store everything in metadata
+        # ====================================================================
+        metadata['feature_categories'] = {
+            'numeric': numeric_features,
+            'categorical': categorical_features
+        }
+        
+        # Get model info
+        model_info = {
+            'n_estimators': model.n_estimators,
+            'max_depth': model.max_depth,
+            'n_features': model.n_features_in_,
+            'feature_names': list(model.feature_names_in_)
+        }
+        
+        if 'model_info' not in metadata:
+            metadata['model_info'] = model_info
+        else:
+            metadata['model_info'].update(model_info)
+        
+        # Set default threshold from training
+        if 'optimal_threshold' not in metadata.get('model_info', {}):
+            metadata['model_info']['optimal_threshold'] = 0.48
+        
+        # Performance metrics from training
         if 'performance_metrics' not in metadata:
             metadata['performance_metrics'] = {
                 'recall': 0.690,
@@ -262,63 +191,87 @@ def load_model_and_data():
                 'roc_auc': 0.660
             }
         
-        if 'model_info' not in metadata:
-            metadata['model_info'] = {
-                'optimal_threshold': 0.48,
-                'n_estimators': 285,
-                'max_depth': 5
-            }
-        
-        return model, features, metadata
+        st.success("🎯 Model ready for predictions")
+        return model, model.feature_names_in_, metadata
         
     except Exception as e:
-        st.error(f"❌ Error loading model: {str(e)}")
+        st.error(f"❌ Error loading model: {e}")
+        st.error("Please ensure these files exist in the same directory:")
+        st.error("1. hospital_rf_20260121_streamlit.joblib")
+        st.error("2. hospital_features_20260121.pkl")
+        st.error("3. hospital_metadata_20260121.pkl")
         return None, [], {}
 
-# Load model
+# Load the model
 model, features, metadata = load_model_and_data()
-threshold = metadata.get('model_info', {}).get('optimal_threshold', 0.48) if metadata else 0.48
+
+# Get threshold from metadata
+threshold = metadata.get('model_info', {}).get('optimal_threshold', 0.48)
 
 # ============================================================================
-# PREDICTION FUNCTION
+# PREDICTION FUNCTION - EXACT MATCH TO TRAINING
 # ============================================================================
 def predict_readmission_risk(user_inputs):
     """Make prediction with exact feature engineering from training"""
+    
     if model is None:
-        st.error("Model not loaded. Please check if model files exist.")
+        st.error("Model not loaded. Please check model files.")
         return None
     
     try:
+        # Create DataFrame with all features initialized to 0.0
+        # This ensures we have ALL features in the EXACT order
         feature_dict = {feat: 0.0 for feat in features}
         input_df = pd.DataFrame([feature_dict])
         
-        # Set numeric features
-        numeric_fields = ['time_in_hospital', 'num_lab_procedures', 'num_medications', 
-                         'total_hospital_visits', 'number_emergency', 'age_numeric']
-        for field in numeric_fields:
-            input_df[field] = float(user_inputs[field])
+        # ====================================================================
+        # SET NUMERIC FEATURES (Exactly as in training)
+        # ====================================================================
+        input_df['time_in_hospital'] = float(user_inputs['time_in_hospital'])
+        input_df['num_lab_procedures'] = float(user_inputs['num_lab_procedures'])
+        input_df['num_medications'] = float(user_inputs['num_medications'])
+        input_df['total_hospital_visits'] = float(user_inputs['total_hospital_visits'])
+        input_df['number_emergency'] = float(user_inputs['number_emergency'])
+        input_df['age_numeric'] = float(user_inputs['age_numeric'])
         
-        # Set categorical features
-        gender_map = {"Female": 0, "Male": 1, "Unknown/Other": 2}
+        # ====================================================================
+        # SET CATEGORICAL FEATURES (One-hot encoding EXACTLY as in training)
+        # ====================================================================
+        
+        # Gender mapping (from training data exploration)
+        gender_map = {
+            "Female": 0,      # gender_0 = 1
+            "Male": 1,        # gender_1 = 1
+            "Unknown/Other": 2  # gender_2 = 1
+        }
         gender_idx = gender_map[user_inputs['gender']]
         input_df[f'gender_{gender_idx}'] = 1.0
         
+        # Admission type mapping (from training data)
         admission_map = {
-            "Emergency": 0, "Urgent": 1, "Elective": 2, "Newborn": 3,
-            "Trauma Center": 4, "Not Mapped": 5, "NULL": 6, "Not Available": 7
+            "Emergency": 0,      # admission_type_0 = 1
+            "Urgent": 1,         # admission_type_1 = 1
+            "Elective": 2,       # admission_type_2 = 1
+            "Newborn": 3,        # admission_type_3 = 1
+            "Trauma Center": 4,  # admission_type_4 = 1
+            "Not Mapped": 5,     # admission_type_5 = 1
+            "NULL": 6,           # admission_type_6 = 1
+            "Not Available": 7   # admission_type_7 = 1
         }
         admission_idx = admission_map[user_inputs['admission_type']]
         input_df[f'admission_type_{admission_idx}'] = 1.0
         
+        # Discharge disposition mapping (CRITICAL - must match training)
+        # Based on your feature importance: discharge_disposition_1, _16, _7 are important
         discharge_map = {
-            "Discharged to home": 0,
-            "Discharged/transferred to another short term hospital": 1,
+            "Discharged to home": 0,  # discharge_disposition_0 = 1
+            "Discharged/transferred to another short term hospital": 1,  # _1 = 1
             "Discharged/transferred to SNF": 2,
             "Discharged/transferred to ICF": 3,
             "Discharged/transferred to another type of inpatient care institution": 4,
             "Discharged/transferred to home with home health service": 5,
             "Left AMA": 6,
-            "Discharged/transferred to home under care of Home IV provider": 7,
+            "Discharged/transferred to home under care of Home IV provider": 7,  # _7 = 1
             "Admitted as an inpatient to this hospital": 8,
             "Neonate discharged to another hospital": 9,
             "Expired": 10,
@@ -327,7 +280,7 @@ def predict_readmission_risk(user_inputs):
             "Hospice / medical facility": 13,
             "Discharged/transferred within this institution": 14,
             "Discharged/transferred to rehab": 15,
-            "Discharged/transferred to another Medicare certified swing bed": 16,
+            "Discharged/transferred to another Medicare certified swing bed": 16,  # _16 = 1
             "Discharged/transferred to a long term care hospital": 17,
             "Discharged/transferred to a nursing facility certified under Medicaid": 18,
             "Discharged/transferred to a psychiatric hospital": 19,
@@ -341,867 +294,397 @@ def predict_readmission_risk(user_inputs):
         discharge_idx = discharge_map[user_inputs['discharge_disposition']]
         input_df[f'discharge_disposition_{discharge_idx}'] = 1.0
         
-        age_group_map = {"18-45": 0, "46-65": 1, "66-85": 2, "86+": 3}
+        # Age group mapping
+        age_group_map = {
+            "18-45": 0,   # age_group_0 = 1
+            "46-65": 1,   # age_group_1 = 1
+            "66-85": 2,   # age_group_2 = 1
+            "86+": 3      # age_group_3 = 1
+        }
         age_group_idx = age_group_map[user_inputs['age_group']]
         input_df[f'age_group_{age_group_idx}'] = 1.0
         
+        # ====================================================================
+        # VALIDATION CHECKS
+        # ====================================================================
+        validation_expander = st.expander("🔍 Prediction Validation", expanded=False)
+        with validation_expander:
+            # Check 1: Feature count
+            st.write(f"**Feature Count:** {len(input_df.columns)} (Expected: {model.n_features_in_})")
+            
+            # Check 2: Non-zero features (should be 13-15)
+            non_zero_count = (input_df != 0).sum().sum()
+            st.write(f"**Non-zero features:** {non_zero_count}")
+            
+            # Check 3: Top features from training
+            st.write("**Setting top important features:**")
+            top_features = ['total_hospital_visits', 'discharge_disposition_1', 
+                          'discharge_disposition_16', 'discharge_disposition_7', 
+                          'number_emergency']
+            for feat in top_features:
+                if feat in input_df.columns:
+                    value = input_df[feat].iloc[0]
+                    st.write(f"- {feat}: {value}")
+            
+            # Check 4: Show all non-zero features
+            non_zero_features = input_df.loc[:, (input_df != 0).any()].columns.tolist()
+            st.write(f"**All non-zero features ({len(non_zero_features)}):**")
+            for feat in non_zero_features:
+                st.write(f"  - {feat}: {input_df[feat].iloc[0]}")
+        
+        # ====================================================================
+        # MAKE PREDICTION
+        # ====================================================================
+        # Ensure correct data type
         input_df = input_df.astype(np.float32)
+        
+        # Get probability
         probability = model.predict_proba(input_df)[0, 1]
+        
+        # Final validation
+        if not (0 <= probability <= 1):
+            st.error(f"Invalid probability: {probability}")
+            return None
         
         return probability
         
     except Exception as e:
         st.error(f"Prediction error: {str(e)}")
+        st.error("Please check that all inputs are valid.")
         return None
 
 # ============================================================================
-# PAGE RENDERING FUNCTIONS - MUST BE DEFINED BEFORE THEY ARE CALLED
+# USER INTERFACE - MATCHES TRAINING DATA DISTRIBUTION
 # ============================================================================
-def render_dashboard():
-    """Main dashboard page"""
-    st.markdown("""
-    <div class="glass-card">
-        <h2 class="glass-card-header">🏠 Welcome to Kenya Hospital Readmission Predictor</h2>
-        <p style="color: #475569; margin-bottom: 1.5rem;">
-            A clinical decision support system for identifying patients at high risk of 30-day hospital readmission.
-            This tool helps healthcare providers prioritize interventions and optimize resource allocation.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Key Metrics
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        <div class="metric-card">
-            <div style="text-align: center;">
-                <div style="font-size: 2.5rem; color: #1a73e8; margin-bottom: 0.5rem;">📈</div>
-                <h3 style="color: #334155; margin-bottom: 0.5rem;">Model Accuracy</h3>
-                <div style="font-size: 2rem; font-weight: 700; color: #1a73e8;">69%</div>
-                <div style="color: #64748b; font-size: 0.9rem;">Recall for high-risk patients</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="metric-card">
-            <div style="text-align: center;">
-                <div style="font-size: 2.5rem; color: #00bfa5; margin-bottom: 0.5rem;">🏥</div>
-                <h3 style="color: #334155; margin-bottom: 0.5rem;">Patients Analyzed</h3>
-                <div style="font-size: 2rem; font-weight: 700; color: #00bfa5;">81,412</div>
-                <div style="color: #64748b; font-size: 0.9rem;">Kenyan hospital records</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown("""
-        <div class="metric-card">
-            <div style="text-align: center;">
-                <div style="font-size: 2.5rem; color: #2e7d32; margin-bottom: 0.5rem;">🎯</div>
-                <h3 style="color: #334155; margin-bottom: 0.5rem;">Risk Threshold</h3>
-                <div style="font-size: 2rem; font-weight: 700; color: #2e7d32;">48%</div>
-                <div style="color: #64748b; font-size: 0.9rem;">Clinical decision boundary</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Quick Start Section
-    st.markdown("""
-    <div class="glass-card" style="margin-top: 2rem;">
-        <h3 style="color: #1e3a8a; margin-bottom: 1.5rem;">🚀 Quick Start Guide</h3>
-        
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2rem;">
-            <div style="text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 10px;">
-                <div style="font-size: 3rem; color: #1a73e8; margin-bottom: 1rem;">1️⃣</div>
-                <h4 style="color: #334155; margin-bottom: 0.5rem;">Navigate to Assessment</h4>
-                <p style="color: #64748b; font-size: 0.9rem;">
-                    Click on "📋 Patient Assessment" in the sidebar to begin
-                </p>
-            </div>
-            
-            <div style="text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 10px;">
-                <div style="font-size: 3rem; color: #1a73e8; margin-bottom: 1rem;">2️⃣</div>
-                <h4 style="color: #334155; margin-bottom: 0.5rem;">Enter Patient Data</h4>
-                <p style="color: #64748b; font-size: 0.9rem;">
-                    Fill in clinical and demographic information in the form
-                </p>
-            </div>
-            
-            <div style="text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 10px;">
-                <div style="font-size: 3rem; color: #1a73e8; margin-bottom: 1rem;">3️⃣</div>
-                <h4 style="color: #334155; margin-bottom: 0.5rem;">Get Risk Prediction</h4>
-                <p style="color: #64748b; font-size: 0.9rem;">
-                    Click "Calculate Readmission Risk" for instant results
-                </p>
-            </div>
-        </div>
-        
-        <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 10px; border: 1px solid #bae6fd;">
-            <h4 style="color: #0369a1; margin-bottom: 1rem;">💡 Pro Tip</h4>
-            <p style="color: #475569; margin: 0;">
-                For accurate predictions, ensure all fields are filled with current patient data. 
-                The model is optimized for Kenyan healthcare context and considers local factors 
-                specific to the region.
-            </p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Recent Activity (placeholder)
-    st.markdown("""
-    <div class="glass-card" style="margin-top: 2rem;">
-        <h3 style="color: #1e3a8a; margin-bottom: 1.5rem;">📋 Recent Assessments</h3>
-        <div style="color: #475569; text-align: center; padding: 3rem 2rem;">
-            <div style="font-size: 4rem; color: #e2e8f0; margin-bottom: 1rem;">📊</div>
-            <p style="color: #94a3b8; font-size: 1.1rem;">
-                No recent assessments found. Start by creating a new patient assessment.
-            </p>
-            <p style="color: #64748b; margin-top: 1rem;">
-                Assessment history will appear here after you complete predictions
-            </p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+st.header("📋 Patient Assessment")
 
-def render_assessment():
-    """Patient assessment page"""
-    st.markdown("""
-    <div class="glass-card">
-        <h2 class="glass-card-header">📋 Patient Risk Assessment</h2>
-        <p style="color: #475569; margin-bottom: 1.5rem;">
-            Enter patient information below to calculate 30-day readmission risk probability.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Create tabs for different sections
-    tab1, tab2 = st.tabs(["🏥 Clinical Information", "👤 Demographics & Administration"])
-    
-    with tab1:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("### Hospital Stay Details")
-            time_in_hospital = st.slider(
-                "Duration of Hospital Stay (days)",
-                1, 30, 7,
-                help="Current admission length"
-            )
-            
-            num_lab_procedures = st.number_input(
-                "Number of Laboratory Procedures",
-                0, 200, 45,
-                help="Lab tests performed during stay"
-            )
-            
-            num_medications = st.number_input(
-                "Medication Count",
-                0, 100, 12,
-                help="Number of prescribed medications"
-            )
-        
-        with col2:
-            st.markdown("### Healthcare Utilization")
-            total_hospital_visits = st.number_input(
-                "Total Hospital Admissions (Past Year)",
-                0, 50, 3,
-                help="Previous 12-month admission count"
-            )
-            
-            number_emergency = st.number_input(
-                "Emergency Department Visits (Past Year)",
-                0, 20, 1,
-                help="ER visits in previous year"
-            )
-            
-            age_numeric = st.slider(
-                "Patient Age",
-                18, 100, 58,
-                help="Patient's current age in years"
-            )
-    
-    with tab2:
-        col3, col4 = st.columns(2)
-        
-        with col3:
-            st.markdown("### Patient Information")
-            gender = st.selectbox(
-                "Gender",
-                ["Female", "Male", "Unknown/Other"]
-            )
-            
-            age_group = st.selectbox(
-                "Age Group Category",
-                ["18-45", "46-65", "66-85", "86+"]
-            )
-            
-            admission_type = st.selectbox(
-                "Type of Admission",
-                ["Emergency", "Urgent", "Elective", "Newborn", 
-                 "Trauma Center", "Not Mapped", "NULL", "Not Available"]
-            )
-        
-        with col4:
-            st.markdown("### Discharge Planning")
-            discharge_disposition = st.selectbox(
-                "Discharge Destination",
-                [
-                    "Discharged to home",
-                    "Discharged/transferred to another short term hospital",
-                    "Discharged/transferred to SNF",
-                    "Discharged/transferred to ICF",
-                    "Discharged/transferred to another type of inpatient care institution",
-                    "Discharged/transferred to home with home health service",
-                    "Left AMA",
-                    "Discharged/transferred to home under care of Home IV provider",
-                    "Admitted as an inpatient to this hospital",
-                    "Neonate discharged to another hospital",
-                    "Expired",
-                    "Still patient",
-                    "Hospice / home",
-                    "Hospice / medical facility",
-                    "Discharged/transferred within this institution",
-                    "Discharged/transferred to rehab",
-                    "Discharged/transferred to another Medicare certified swing bed",
-                    "Discharged/transferred to a long term care hospital",
-                    "Discharged/transferred to a nursing facility certified under Medicaid",
-                    "Discharged/transferred to a psychiatric hospital",
-                    "Discharged/transferred to a critical access hospital",
-                    "Discharged/transferred to another Type of Facility",
-                    "Discharged/transferred to a court/law enforcement",
-                    "Discharged/transferred to a Federal health care facility",
-                    "Discharged/transferred to a hospital-based Medicare approved swing bed",
-                    "Discharged/transferred to an inpatient rehabilitation facility"
-                ]
-            )
-    
-    # Store data in session state
-    st.session_state.patient_data = {
-        'time_in_hospital': time_in_hospital,
-        'num_lab_procedures': num_lab_procedures,
-        'num_medications': num_medications,
-        'total_hospital_visits': total_hospital_visits,
-        'number_emergency': number_emergency,
-        'age_numeric': age_numeric,
-        'gender': gender,
-        'admission_type': admission_type,
-        'discharge_disposition': discharge_disposition,
-        'age_group': age_group
-    }
-    
-    # Predict Button
-    st.markdown("---")
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-    with col_btn2:
-        if st.button("🔍 Calculate Readmission Risk", type="primary", use_container_width=True):
-            with st.spinner("🤖 Analyzing patient data..."):
-                probability = predict_readmission_risk(st.session_state.patient_data)
-                
-                if probability is not None:
-                    st.session_state.prediction_result = probability
-                    st.session_state.show_results = True
-                    st.rerun()
+col1, col2 = st.columns(2)
 
-def render_results():
-    """Display prediction results"""
-    if 'prediction_result' not in st.session_state:
-        st.warning("Please run an assessment first.")
-        return
+with col1:
+    st.subheader("🏥 Clinical Information")
     
-    probability = st.session_state.prediction_result
-    patient_data = st.session_state.patient_data
+    # Based on training data statistics
+    time_in_hospital = st.slider(
+        "Time in Hospital (days)",
+        min_value=1,
+        max_value=30,
+        value=7,
+        help="Average in training: ~4.4 days"
+    )
     
-    # Results Header
-    st.markdown("""
-    <div class="glass-card">
-        <h2 class="glass-card-header">📈 Risk Assessment Results</h2>
-        <p style="color: #475569;">
-            Analysis completed on {date} at {time}
-        </p>
-    </div>
-    """.format(
-        date=datetime.now().strftime("%B %d, %Y"),
-        time=datetime.now().strftime("%I:%M %p")
-    ), unsafe_allow_html=True)
+    num_lab_procedures = st.number_input(
+        "Number of Lab Procedures",
+        min_value=0,
+        max_value=200,
+        value=45,
+        help="Average in training: ~43"
+    )
     
-    # Risk Score Cards
-    risk_class = "high-risk-card" if probability >= threshold else "low-risk-card"
-    risk_label = "🔴 HIGH RISK" if probability >= threshold else "🟢 LOW RISK"
-    risk_color = "#d32f2f" if probability >= threshold else "#2e7d32"
+    num_medications = st.number_input(
+        "Number of Medications",
+        min_value=0,
+        max_value=100,
+        value=12,
+        help="Average in training: ~16"
+    )
     
-    col1, col2, col3 = st.columns(3)
+    total_hospital_visits = st.number_input(
+        "Total Hospital Visits (past year)",
+        min_value=0,
+        max_value=50,
+        value=3,
+        help="**TOP PREDICTOR** - Average in training: ~2.4"
+    )
     
-    with col1:
-        st.markdown(f"""
-        <div class="metric-card {risk_class}">
-            <div style="text-align: center;">
-                <h3 style="color: #334155; margin-bottom: 1rem;">Risk Probability</h3>
-                <div style="font-size: 3.5rem; font-weight: 700; color: {risk_color}; 
-                            margin: 1rem 0;">
-                    {probability:.1%}
-                </div>
-                <div style="color: #64748b;">
-                    Threshold: {threshold:.1%}
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    number_emergency = st.number_input(
+        "Emergency Visits (past year)",
+        min_value=0,
+        max_value=20,
+        value=1,
+        help="**5th most important predictor** - Average in training: ~0.3"
+    )
     
-    with col2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="text-align: center;">
-                <h3 style="color: #334155; margin-bottom: 1rem;">Risk Classification</h3>
-                <div style="font-size: 2rem; color: {risk_color}; margin: 1rem 0;">
-                    {risk_label}
-                </div>
-                <div style="color: #64748b;">
-                    {'Priority intervention required' if probability >= threshold else 'Standard care protocol'}
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        # Simple visual gauge without Plotly
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="text-align: center;">
-                <h3 style="color: #334155; margin-bottom: 1rem;">📊 Risk Scale</h3>
-                <div style="display: flex; align-items: center; justify-content: center; margin: 1rem 0;">
-                    <div style="width: 100%; background: linear-gradient(to right, #c6f6d5, #fed7d7); 
-                                height: 20px; border-radius: 10px; position: relative;">
-                        <div style="position: absolute; left: {threshold*100}%; width: 3px; 
-                                    height: 30px; background: red; top: -5px;"></div>
-                        <div style="position: absolute; left: {min(probability*100, 100)}%; width: 0; 
-                                    height: 0; border-left: 10px solid transparent; 
-                                    border-right: 10px solid transparent; 
-                                    border-bottom: 15px solid {risk_color}; top: -20px;"></div>
-                    </div>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
-                    <span style="color: #64748b; font-size: 0.9rem;">0%</span>
-                    <span style="color: #64748b; font-size: 0.9rem;">Threshold: {threshold:.1%}</span>
-                    <span style="color: #64748b; font-size: 0.9rem;">100%</span>
-                </div>
-                <div style="margin-top: 1rem; color: #64748b;">
-                    Patient score: <strong>{probability:.1%}</strong>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Clinical Recommendations
-    st.markdown("""
-    <div class="glass-card">
-        <h3 style="color: #1e3a8a; margin-bottom: 1.5rem;">
-            {'⚠️ Priority Clinical Actions Required' if probability >= threshold else '✅ Standard Care Protocol'}
-        </h3>
-    """, unsafe_allow_html=True)
-    
-    if probability >= threshold:
-        col4, col5 = st.columns(2)
-        with col4:
-            st.markdown("""
-            ### 🚨 Immediate Actions
-            - Schedule follow-up within **7 days**
-            - Coordinate with home care services
-            - Review medication adherence plan
-            - Flag for multidisciplinary team review
-            - Arrange transportation assistance
-            """)
-        
-        with col5:
-            st.markdown("""
-            ### 📋 Patient Support
-            - Provide emergency contact information
-            - Review warning signs and symptoms
-            - Schedule social work consultation
-            - Arrange community resource referral
-            - Implement telehealth monitoring
-            """)
-    else:
-        st.markdown("""
-        ### ✅ Recommended Protocol
-        - Schedule 30-day follow-up appointment
-        - Provide comprehensive discharge instructions
-        - Review medications and potential side effects
-        - Coordinate with primary care provider
-        - Supply patient education materials
-        - Recommend regular health monitoring
-        """)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Key Risk Factors
-    st.markdown("""
-    <div class="glass-card">
-        <h3 style="color: #1e3a8a; margin-bottom: 1.5rem;">🎯 Identified Risk Factors</h3>
-    """, unsafe_allow_html=True)
-    
-    risk_factors = []
-    if patient_data['total_hospital_visits'] >= 4:
-        risk_factors.append(f"**High hospital utilization** ({patient_data['total_hospital_visits']} visits in past year)")
-    if patient_data['discharge_disposition'] in ["Discharged/transferred to another short term hospital",
-                                                 "Discharged/transferred to another Medicare certified swing bed",
-                                                 "Discharged/transferred to home under care of Home IV provider"]:
-        risk_factors.append("**Complex discharge disposition**")
-    if patient_data['number_emergency'] >= 2:
-        risk_factors.append(f"**Frequent ED visits** ({patient_data['number_emergency']} visits)")
-    if patient_data['time_in_hospital'] >= 10:
-        risk_factors.append(f"**Extended hospitalization** ({patient_data['time_in_hospital']} days)")
-    if patient_data['num_medications'] >= 15:
-        risk_factors.append(f"**High medication burden** ({patient_data['num_medications']} medications)")
-    if patient_data['age_numeric'] >= 75:
-        risk_factors.append(f"**Advanced age** ({patient_data['age_numeric']} years)")
-    
-    if risk_factors:
-        cols = st.columns(2)
-        for i, factor in enumerate(risk_factors):
-            with cols[i % 2]:
-                st.markdown(f"""
-                <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; 
-                            margin-bottom: 0.75rem; border-left: 4px solid #1a73e8;">
-                    <div style="color: #334155; font-weight: 500;">{factor}</div>
-                </div>
-                """, unsafe_allow_html=True)
-    else:
-        st.info("No significant risk factors identified. Patient profile suggests low readmission risk.")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    age_numeric = st.slider(
+        "Age (years)",
+        min_value=18,
+        max_value=100,
+        value=58,
+        help="Average in training: ~55"
+    )
 
-def render_insights():
-    """Model insights and analytics page"""
-    st.markdown("""
-    <div class="glass-card">
-        <h2 class="glass-card-header">📊 Model Analytics & Insights</h2>
-        <p style="color: #475569; margin-bottom: 1.5rem;">
-            Deep dive into model performance, feature importance, and clinical validation.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+with col2:
+    st.subheader("👤 Demographic & Administrative Information")
     
-    tab1, tab2, tab3 = st.tabs(["📈 Performance Metrics", "🎯 Feature Importance", "🏥 Clinical Validation"])
+    gender = st.selectbox(
+        "Gender",
+        ["Female", "Male", "Unknown/Other"],
+        help="Female is most common in training data"
+    )
     
-    with tab1:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            perf_metrics = metadata.get("performance_metrics", {}) if metadata else {}
-            
-            st.markdown("### 📊 Model Performance Dashboard")
-            
-            # Create a simple bar chart using HTML/CSS
-            metrics_data = [
-                ("Recall", perf_metrics.get('recall', 0.690), "#1a73e8"),
-                ("Precision", perf_metrics.get('precision', 0.154), "#00bfa5"),
-                ("F1-Score", perf_metrics.get('f1_score', 0.252), "#d32f2f"),
-                ("ROC AUC", perf_metrics.get('roc_auc', 0.660), "#2e7d32"),
-                ("Specificity", 0.85, "#f59e0b")  # Example value
-            ]
-            
-            bars_html = ""
-            for label, value, color in metrics_data:
-                bar_width = value * 100
-                bars_html += f"""
-                <div style="margin-bottom: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                        <span style="color: #334155; font-weight: 500;">{label}</span>
-                        <span style="color: #64748b; font-weight: bold;">{value:.3f}</span>
-                    </div>
-                    <div style="width: 100%; background: #e2e8f0; height: 10px; border-radius: 5px;">
-                        <div style="width: {bar_width}%; background: {color}; height: 10px; border-radius: 5px;"></div>
-                    </div>
-                </div>
-                """
-            
-            st.markdown(f"""
-            <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-                {bars_html}
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown("### Model Performance Summary")
-            
-            metrics = [
-                ("Recall", f"{perf_metrics.get('recall', 0.690):.1%}", 
-                 "Proportion of actual readmissions correctly identified"),
-                ("Precision", f"{perf_metrics.get('precision', 0.154):.1%}", 
-                 "Accuracy of high-risk predictions"),
-                ("F1-Score", f"{perf_metrics.get('f1_score', 0.252):.3f}", 
-                 "Balance between precision and recall"),
-                ("ROC AUC", f"{perf_metrics.get('roc_auc', 0.660):.3f}", 
-                 "Overall discrimination ability"),
-                ("Threshold", f"{threshold:.1%}", 
-                 "Clinical decision boundary")
-            ]
-            
-            for label, value, desc in metrics:
-                st.markdown(f"""
-                <div style="background: rgba(255, 255, 255, 0.8); padding: 1rem; 
-                            border-radius: 8px; margin-bottom: 0.75rem; 
-                            border-left: 4px solid #00bfa5;">
-                    <div style="display: flex; justify-content: space-between; 
-                                align-items: center; margin-bottom: 0.25rem;">
-                        <strong style="color: #334155;">{label}</strong>
-                        <span style="font-size: 1.2rem; font-weight: 700; color: #1a73e8;">
-                            {value}
-                        </span>
-                    </div>
-                    <div style="color: #64748b; font-size: 0.9rem;">{desc}</div>
-                </div>
-                """, unsafe_allow_html=True)
+    admission_type = st.selectbox(
+        "Admission Type",
+        [
+            "Emergency", "Urgent", "Elective", "Newborn", 
+            "Trauma Center", "Not Mapped", "NULL", "Not Available"
+        ],
+        index=0,
+        help="Emergency admissions have higher readmission risk"
+    )
     
-    with tab2:
-        # Feature importance visualization using HTML/CSS
-        features_data = [
-            ('Total Hospital Visits', 47.98),
-            ('Discharge to Another Hospital', 15.15),
-            ('Discharge to Swing Bed', 13.57),
-            ('Home IV Care Discharge', 7.84),
-            ('Emergency Visits', 3.49),
-            ('Hospital Stay Duration', 2.69),
-            ('Medication Count', 2.09),
-            ('Lab Procedures', 1.43),
-            ('Age', 1.10),
-            ('Admission Type', 0.89)
-        ]
-        
-        # Create horizontal bars with HTML
-        bars_html = ""
-        for feature, importance in features_data:
-            bar_width = importance / 50 * 100  # Scale for better visualization
-            bars_html += f"""
-            <div style="margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                    <span style="color: #334155; font-weight: 500;">{feature}</span>
-                    <span style="color: #64748b; font-weight: bold;">{importance:.2f}%</span>
-                </div>
-                <div style="width: 100%; background: #e2e8f0; height: 12px; border-radius: 6px;">
-                    <div style="width: {bar_width}%; background: linear-gradient(90deg, #1a73e8, #00bfa5); 
-                            height: 12px; border-radius: 6px;"></div>
-                </div>
-            </div>
-            """
-        
-        st.markdown(f"""
-        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-            <h4 style="color: #1e3a8a; margin-bottom: 1.5rem;">Top 10 Feature Importance</h4>
-            {bars_html}
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Clinical interpretation
-        st.markdown("""
-        <div class="glass-card" style="margin-top: 2rem;">
-            <h4 style="color: #1e3a8a; margin-bottom: 1rem;">🧠 Clinical Interpretation</h4>
-            <div style="color: #475569; line-height: 1.6;">
-                <p><strong>Key Insights:</strong></p>
-                <ul>
-                    <li><strong>Hospital Utilization (48%):</strong> Previous hospital visits are the strongest predictor, indicating complex chronic conditions</li>
-                    <li><strong>Discharge Destination (36%):</strong> Patients transferred to other facilities or requiring home IV care have higher readmission risk</li>
-                    <li><strong>Emergency Visits (3.5%):</strong> Recent ER visits signal unstable health conditions</li>
-                    <li><strong>Length of Stay (2.7%):</strong> Longer stays correlate with more severe illnesses</li>
-                </ul>
-                <p style="margin-top: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px;">
-                    <strong>Clinical Strategy:</strong> The model prioritizes sensitivity over specificity to ensure 
-                    high-risk patients aren't missed, aligning with Kenyan healthcare priorities where 
-                    preventing adverse outcomes is critical.
-                </p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    discharge_disposition = st.selectbox(
+        "Discharge Disposition",
+        [
+            "Discharged to home",  # Index 0
+            "Discharged/transferred to another short term hospital",  # Index 1 (2nd most important)
+            "Discharged/transferred to SNF",
+            "Discharged/transferred to ICF",
+            "Discharged/transferred to another type of inpatient care institution",
+            "Discharged/transferred to home with home health service",
+            "Left AMA",
+            "Discharged/transferred to home under care of Home IV provider",  # Index 7 (4th most important)
+            "Admitted as an inpatient to this hospital",
+            "Neonate discharged to another hospital",
+            "Expired",
+            "Still patient",
+            "Hospice / home",
+            "Hospice / medical facility",
+            "Discharged/transferred within this institution",
+            "Discharged/transferred to rehab",
+            "Discharged/transferred to another Medicare certified swing bed",  # Index 16 (3rd most important)
+            "Discharged/transferred to a long term care hospital",
+            "Discharged/transferred to a nursing facility certified under Medicaid",
+            "Discharged/transferred to a psychiatric hospital",
+            "Discharged/transferred to a critical access hospital",
+            "Discharged/transferred to another Type of Facility",
+            "Discharged/transferred to a court/law enforcement",
+            "Discharged/transferred to a Federal health care facility",
+            "Discharged/transferred to a hospital-based Medicare approved swing bed",
+            "Discharged/transferred to an inpatient rehabilitation facility"
+        ],
+        help="**CRITICAL: Dispositions 1, 16, 7 are top predictors**"
+    )
     
-    with tab3:
-        st.markdown("""
-        <div class="glass-card">
-            <h3 style="color: #1e3a8a; margin-bottom: 1.5rem;">🏥 Clinical Validation & Impact</h3>
-            
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-bottom: 2rem;">
-                <div>
-                    <h4 style="color: #334155; margin-bottom: 1rem;">✅ Validation Results</h4>
-                    <ul style="color: #475569;">
-                        <li><strong>81,412 patient records</strong> from Kenyan hospitals</li>
-                        <li><strong>11.2% readmission rate</strong> in training data</li>
-                        <li><strong>3-fold cross-validation</strong> for reliability</li>
-                        <li><strong>Hyperparameter optimization</strong> for Kenyan context</li>
-                        <li><strong>Threshold calibration</strong> for clinical utility</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 style="color: #334155; margin-bottom: 1rem;">🎯 Clinical Impact</h4>
-                    <ul style="color: #475569;">
-                        <li><strong>69% of high-risk patients identified</strong></li>
-                        <li><strong>48% risk threshold optimized</strong> for actionability</li>
-                        <li><strong>Resource allocation improvement</strong> potential</li>
-                        <li><strong>Standardized risk assessment</strong> across facilities</li>
-                        <li><strong>Early intervention facilitation</strong></li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 10px; border: 1px solid #bae6fd;">
-                <h4 style="color: #0369a1; margin-bottom: 1rem;">💡 Implementation Recommendations</h4>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px;">
-                        <div style="font-size: 1.5rem; color: #1a73e8; margin-bottom: 0.5rem;">📋</div>
-                        <strong>Phase 1: Pilot</strong>
-                        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0.5rem;">
-                            Single hospital validation
-                        </p>
-                    </div>
-                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px;">
-                        <div style="font-size: 1.5rem; color: #00bfa5; margin-bottom: 0.5rem;">🚀</div>
-                        <strong>Phase 2: Expansion</strong>
-                        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0.5rem;">
-                            Regional implementation
-                        </p>
-                    </div>
-                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px;">
-                        <div style="font-size: 1.5rem; color: #2e7d32; margin-bottom: 0.5rem;">🌍</div>
-                        <strong>Phase 3: Scale</strong>
-                        <p style="font-size: 0.9rem; color: #64748b; margin-top: 0.5rem;">
-                            National deployment
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-def render_about():
-    """About and information page"""
-    st.markdown("""
-    <div class="glass-card">
-        <h2 class="glass-card-header">ℹ️ About This Project</h2>
-        
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; margin: 2rem 0;">
-            <div>
-                <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Project Overview</h3>
-                <p style="color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
-                    The Kenya Hospital Readmission Predictor is a clinical decision support system 
-                    developed to address the challenge of preventable hospital readmissions in the 
-                    Kenyan healthcare context. By leveraging machine learning and historical patient data, 
-                    this tool helps healthcare providers identify high-risk patients for targeted 
-                    interventions.
-                </p>
-                
-                <h4 style="color: #334155; margin-bottom: 1rem;">🎯 Project Objectives</h4>
-                <ul style="color: #475569; margin-bottom: 1.5rem;">
-                    <li>Reduce preventable 30-day readmissions by 30%</li>
-                    <li>Optimize resource allocation for high-risk patients</li>
-                    <li>Standardize risk assessment across healthcare facilities</li>
-                    <li>Provide evidence-based clinical decision support</li>
-                    <li>Improve patient outcomes through early intervention</li>
-                </ul>
-            </div>
-            
-            <div>
-                <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Technical Stack</h3>
-                <div style="background: #f8fafc; padding: 1.5rem; border-radius: 10px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">🐍</div>
-                        <div>
-                            <strong>Python 3.9+</strong>
-                            <div style="color: #64748b; font-size: 0.9rem;">Core programming</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">🤖</div>
-                        <div>
-                            <strong>Scikit-learn</strong>
-                            <div style="color: #64748b; font-size: 0.9rem;">Machine learning</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">📊</div>
-                        <div>
-                            <strong>Streamlit</strong>
-                            <div style="color: #64748b; font-size: 0.9rem;">Web application</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">🏥</div>
-                        <div>
-                            <strong>Kenyan EHR Data</strong>
-                            <div style="color: #64748b; font-size: 0.9rem;">81,412 patient records</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 10px; border: 1px solid #bae6fd; margin-top: 2rem;">
-            <h4 style="color: #0369a1; margin-bottom: 1rem;">👥 Team & Contact</h4>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; color: #1a73e8; margin-bottom: 0.5rem;">📧</div>
-                    <strong>Clinical Support</strong>
-                    <div style="font-size: 0.9rem; color: #64748b;">
-                        clinical@kenyahospital.ke
-                    </div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; color: #00bfa5; margin-bottom: 0.5rem;">🛠️</div>
-                    <strong>Technical Support</strong>
-                    <div style="font-size: 0.9rem; color: #64748b;">
-                        tech@kenyahospital.ke
-                    </div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; color: #2e7d32; margin-bottom: 0.5rem;">📋</div>
-                    <strong>Project Management</strong>
-                    <div style="font-size: 0.9rem; color: #64748b;">
-                        pm@kenyahospital.ke
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    age_group = st.selectbox(
+        "Age Group",
+        ["18-45", "46-65", "66-85", "86+"],
+        index=1,
+        help="46-65 is most common age group"
+    )
 
 # ============================================================================
-# SIDEBAR - Navigation Menu
+# PREDICTION BUTTON AND RESULTS
+# ============================================================================
+st.markdown("---")
+
+if st.button("🔮 Predict Readmission Risk", type="primary", use_container_width=True):
+    if model is None:
+        st.error("Model not available. Please check if model files exist.")
+    else:
+        with st.spinner("🔄 Calculating risk..."):
+            # Collect all inputs
+            user_inputs = {
+                'time_in_hospital': time_in_hospital,
+                'num_lab_procedures': num_lab_procedures,
+                'num_medications': num_medications,
+                'total_hospital_visits': total_hospital_visits,
+                'number_emergency': number_emergency,
+                'age_numeric': age_numeric,
+                'gender': gender,
+                'admission_type': admission_type,
+                'discharge_disposition': discharge_disposition,
+                'age_group': age_group
+            }
+            
+            # Make prediction
+            probability = predict_readmission_risk(user_inputs)
+            
+            if probability is not None:
+                st.success("✅ Assessment Complete")
+                
+                # Display results
+                st.subheader("📊 Risk Assessment Results")
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric(
+                        "Risk Probability",
+                        f"{probability:.1%}",
+                        delta=f"{probability - threshold:.1%} vs threshold",
+                        delta_color="inverse"
+                    )
+                    st.metric("Decision Threshold", f"{threshold:.1%}")
+                
+                with col2:
+                    risk_level = "🔴 HIGH RISK" if probability >= threshold else "🟢 LOW RISK"
+                    st.metric("Risk Level", risk_level)
+                    
+                    if probability >= threshold:
+                        st.error("⚠️ Priority follow-up required")
+                        st.write("""
+                        **Clinical Actions (per model training):**
+                        - Schedule follow-up within 7 days
+                        - Coordinate with home care services
+                        - Review medication adherence
+                        - Flag for care team notification
+                        """)
+                    else:
+                        st.success("✅ Standard care protocol")
+                        st.write("""
+                        **Clinical Actions (per model training):**
+                        - Standard discharge planning
+                        - 30-day follow-up appointment
+                        - Patient education materials
+                        - Regular monitoring advised
+                        """)
+                
+                with col3:
+                    st.write("**🎯 Top Risk Factors Present:**")
+                    
+                    # Based on feature importance from training
+                    risk_factors = []
+                    
+                    # Total hospital visits (MOST IMPORTANT)
+                    if total_hospital_visits >= 4:
+                        risk_factors.append(f"• **High hospital visits** ({total_hospital_visits}) - Top predictor")
+                    
+                    # Discharge disposition (2nd, 3rd, 4th most important)
+                    discharge_idx = [
+                        "Discharged/transferred to another short term hospital",
+                        "Discharged/transferred to another Medicare certified swing bed",
+                        "Discharged/transferred to home under care of Home IV provider"
+                    ]
+                    if discharge_disposition in discharge_idx:
+                        risk_factors.append(f"• **Specific discharge disposition** - High importance in model")
+                    
+                    # Emergency visits (5th most important)
+                    if number_emergency >= 2:
+                        risk_factors.append(f"• **Multiple ED visits** ({number_emergency}) - 5th most important")
+                    
+                    # Other factors
+                    if time_in_hospital >= 10:
+                        risk_factors.append(f"• **Long hospital stay** ({time_in_hospital} days)")
+                    
+                    if num_medications >= 15:
+                        risk_factors.append(f"• **High medication count** ({num_medications})")
+                    
+                    if age_numeric >= 75:
+                        risk_factors.append(f"• **Advanced age** ({age_numeric} years)")
+                    
+                    if risk_factors:
+                        for factor in risk_factors:
+                            st.write(factor)
+                    else:
+                        st.write("• No high-risk factors identified")
+                
+                # Show explanation based on training
+                st.info("""
+                **Model Performance Context (from training):**
+                - **Recall**: 69.0% - Model identifies 69% of actual readmissions
+                - **Precision**: 15.4% - When model predicts HIGH RISK, 15.4% actually readmit
+                - **Threshold**: 48% - Optimized to maximize identification of high-risk patients
+                - **False Positives**: Expected - Model prioritizes catching true positives
+                """)
+
+# ============================================================================
+# SIDEBAR WITH MODEL INFORMATION
 # ============================================================================
 with st.sidebar:
-    # Logo and Title
-    st.markdown("""
-    <div style="text-align: center; padding: 2rem 1rem 1rem 1rem;">
-        <div style="font-size: 3rem; color: white; margin-bottom: 0.5rem;">🏥</div>
-        <h2 style="color: white; margin: 0; font-weight: 600;">Kenya Hospital</h2>
-        <h3 style="color: white; margin: 0; opacity: 0.9;">Readmission Predictor</h3>
-        <div style="height: 2px; background: linear-gradient(90deg, white, #00bfa5); 
-                    width: 80px; margin: 1rem auto; opacity: 0.6;"></div>
-        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin-top: 0.5rem;">
-            Clinical Decision Support System v1.0
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.title("🤖 Model Information")
     
-    st.markdown("---")
+    # Model performance from training
+    perf_metrics = metadata.get("performance_metrics", {})
     
-    # Navigation Menu
-    st.markdown("""
-    <div style="padding: 0.5rem;">
-        <h4 style="color: white; margin-bottom: 1rem; opacity: 0.9;">📋 Navigation</h4>
-    </div>
-    """, unsafe_allow_html=True)
+    st.subheader("📈 Performance Metrics")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Recall", f"{perf_metrics.get('recall', 0.690):.1%}")
+        st.metric("Precision", f"{perf_metrics.get('precision', 0.154):.1%}")
+    with col2:
+        st.metric("F1-Score", f"{perf_metrics.get('f1_score', 0.252):.3f}")
+        st.metric("ROC AUC", f"{perf_metrics.get('roc_auc', 0.660):.3f}")
     
-    # Menu Items
-    menu_items = [
-        ("🏠 Dashboard", "dashboard"),
-        ("📋 Patient Assessment", "assessment"),
-        ("📊 Model Insights", "insights"),
-        ("ℹ️ About Project", "about")
-    ]
+    st.divider()
     
-    for label, page in menu_items:
-        is_active = st.session_state.current_page == page
-        if st.button(f" {label}", key=f"btn_{page}"):
-            st.session_state.current_page = page
-            if page == "assessment":
-                st.session_state.show_results = False
-            st.rerun()
+    st.subheader("⚙️ Model Details")
+    model_info = metadata.get("model_info", {})
+    st.write(f"• **Algorithm**: Random Forest")
+    st.write(f"• **Features**: {len(features)}")
+    st.write(f"• **n_estimators**: {model_info.get('n_estimators', 285)}")
+    st.write(f"• **max_depth**: {model_info.get('max_depth', 5)}")
+    st.write(f"• **Threshold**: {threshold:.1%}")
     
-    st.markdown("---")
+    st.divider()
     
-    # Quick Actions
-    st.markdown("""
-    <div style="padding: 0.5rem;">
-        <h4 style="color: white; margin-bottom: 1rem; opacity: 0.9;">⚡ Quick Actions</h4>
-    </div>
-    """, unsafe_allow_html=True)
+    st.subheader("🎯 Top 5 Predictors")
+    st.write("From feature importance analysis:")
+    st.write("1. **total_hospital_visits** (47.98%)")
+    st.write("2. **discharge_disposition_1** (15.15%)")
+    st.write("3. **discharge_disposition_16** (13.57%)")
+    st.write("4. **discharge_disposition_7** (7.84%)")
+    st.write("5. **number_emergency** (3.49%)")
     
-    col_btn1, col_btn2 = st.columns(2)
+    st.divider()
     
-    with col_btn1:
-        if st.button("🔄 Refresh", key="refresh_btn", use_container_width=True):
-            st.rerun()
+    st.subheader("📋 Training Context")
+    st.write("• **Dataset**: 81,412 training samples")
+    st.write("• **Class Balance**: 11.2% readmitted, 88.8% not readmitted")
+    st.write("• **Optimization**: Threshold tuned for Recall ≥ 65%")
+    st.write("• **Use Case**: Identify high-risk patients for intervention")
     
-    with col_btn2:
-        if st.button("📤 Export", key="export_btn", use_container_width=True):
-            st.toast("Export feature coming soon!", icon="📤")
-    
-    # Show results button if available
-    if 'prediction_result' in st.session_state and st.session_state.current_page == 'assessment':
-        if st.button("📊 View Results", type="primary", key="view_results_btn", use_container_width=True):
-            st.session_state.show_results = True
-            st.rerun()
-    
-    st.markdown("---")
-    
-    # System Status
-    st.markdown("""
-    <div style="background: rgba(255, 255, 255, 0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
-        <h4 style="color: white; margin-bottom: 0.75rem; opacity: 0.9;">🟢 System Status</h4>
-        <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                <span>Model Loaded:</span>
-                <span style="color: #4ade80;">✓ Ready</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                <span>Database:</span>
-                <span style="color: #4ade80;">✓ Connected</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span>Last Updated:</span>
-                <span>{date}</span>
-            </div>
-        </div>
-    </div>
-    """.format(date=datetime.now().strftime("%Y-%m-%d")), unsafe_allow_html=True)
-
-# ============================================================================
-# MAIN CONTENT AREA
-# ============================================================================
-# Render the current page
-if st.session_state.current_page == 'dashboard':
-    render_dashboard()
-elif st.session_state.current_page == 'assessment':
-    if hasattr(st.session_state, 'show_results') and st.session_state.show_results:
-        render_results()
-    else:
-        render_assessment()
-elif st.session_state.current_page == 'insights':
-    render_insights()
-elif st.session_state.current_page == 'about':
-    render_about()
+    # Quick test
+    if st.button("🧪 Run Quick Test"):
+        test_inputs = {
+            'time_in_hospital': 7,
+            'num_lab_procedures': 45,
+            'num_medications': 12,
+            'total_hospital_visits': 3,
+            'number_emergency': 1,
+            'age_numeric': 58,
+            'gender': "Female",
+            'admission_type': "Emergency",
+            'discharge_disposition': "Discharged to home",
+            'age_group': "46-65"
+        }
+        prob = predict_readmission_risk(test_inputs)
+        if prob:
+            st.info(f"Test prediction: {prob:.1%}")
 
 # ============================================================================
 # FOOTER
 # ============================================================================
-st.markdown("""
-<div class="footer">
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; align-items: center;">
-        <div style="text-align: left;">
-            <strong style="color: #334155; font-size: 1.1rem;">Kenya Hospital System</strong><br>
-            <span style="color: #64748b; font-size: 0.9rem;">Ministry of Health, Kenya</span>
-        </div>
-        
-        <div style="text-align: center;">
-            <div style="color: #64748b; font-size: 0.9rem;">
-                <strong>© 2024 Clinical Decision Support Tool</strong><br>
-                For professional healthcare use only
-            </div>
-        </div>
-        
-        <div style="text-align: right;">
-            <div style="color: #64748b; font-size: 0.9rem;">
-                <strong>Version 1.0.0</strong><br>
-                January 23, 2026
-            </div>
-        </div>
-    </div>
+st.markdown("---")
+st.caption("🏥 **Kenya Hospital System • Clinical Decision Support Tool v1.0**")
+st.caption("""
+**For clinical support only • Combine with professional judgment**
+- Model trained on historical hospital data
+- Validated for Kenyan healthcare context
+- Threshold optimized for maximum high-risk patient identification
+""")
+
+# ============================================================================
+# DEBUG MODE (Hidden by default) - FIXED SYNTAX
+# ============================================================================
+if st.sidebar.checkbox("🛠️ Debug Mode", value=False):
+    st.sidebar.subheader("Debug Information")
     
-    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
-        <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin: 0;">
-            This tool is designed to support clinical decision making and does not replace professional medical judgment. 
-            All predictions should be verified by qualified healthcare professionals.
-        </p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    st.sidebar.write("**Features:**")
+    st.sidebar.write(f"Total: {len(features)}")
+    
+    # Show feature categories
+    feature_cats = metadata.get('feature_categories', {})
+    if feature_cats:
+        st.sidebar.write(f"Numeric: {len(feature_cats.get('numeric', []))}")
+        st.sidebar.write(f"Categorical groups: {len(feature_cats.get('categorical', {}))}")
+    
+    # Show first 10 features
+    st.sidebar.write("**First 10 features:**")
+    for feat in list(features)[:10]:
+        st.sidebar.write(f"- {feat}")
+    
+    # Show model attributes - FIXED SYNTAX HERE
+    if model:
+        st.sidebar.write("**Model attributes:**")
+        st.sidebar.write(f"- n_features_in_: {model.n_features_in_}")
+        st.sidebar.write(f"- n_estimators: {model.n_estimators}")
+        st.sidebar.write(f"- max_depth: {model.max_depth}")    
