@@ -359,6 +359,7 @@ def predict_readmission_risk(user_inputs):
 # ============================================================================
 def render_about():
     """About and information page"""
+    # YOU NEED THIS WRAPPER
     st.markdown("""
     <div class="glass-card">
         <h2 class="glass-card-header">ℹ️ About This Project</h2>
@@ -373,7 +374,7 @@ def render_about():
                     this tool helps healthcare providers identify high-risk patients for targeted 
                     interventions.
                 </p>
-                
+
                 <h4 style="color: #334155; margin-bottom: 1rem;">🎯 Project Objectives</h4>
                 <ul style="color: #475569; margin-bottom: 1.5rem;">
                     <li>Reduce preventable 30-day readmissions by 30%</li>
@@ -383,7 +384,7 @@ def render_about():
                     <li>Improve patient outcomes through early intervention</li>
                 </ul>
             </div>
-            
+
             <div>
                 <h3 style="color: #1e3a8a; margin-bottom: 1rem;">Technical Stack</h3>
                 <div style="background: #f8fafc; padding: 1.5rem; border-radius: 10px;">
@@ -418,7 +419,7 @@ def render_about():
                 </div>
             </div>
         </div>
-        
+
         <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 10px; border: 1px solid #bae6fd; margin-top: 2rem;">
             <h4 style="color: #0369a1; margin-bottom: 1rem;">👥 Team & Contact</h4>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
@@ -447,7 +448,6 @@ def render_about():
         </div>
     </div>
     """, unsafe_allow_html=True)
-
 def render_assessment():
     """Patient assessment page"""
     st.markdown("""
