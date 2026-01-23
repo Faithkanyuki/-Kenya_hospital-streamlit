@@ -1,4 +1,18 @@
+# ============================================================================
+# PAGE SETUP - MUST BE THE VERY FIRST STREAMLIT COMMAND
+# ============================================================================
 import streamlit as st
+
+st.set_page_config(
+    page_title="Kenya Hospital Readmission Predictor",
+    layout="wide",
+    page_icon="🏥",
+    initial_sidebar_state="expanded"
+)
+
+# ============================================================================
+# IMPORT OTHER LIBRARIES
+# ============================================================================
 import pandas as pd
 import numpy as np
 import joblib
@@ -10,16 +24,6 @@ import plotly.graph_objects as go
 import plotly.express as px
 
 warnings.filterwarnings('ignore')
-
-# ============================================================================
-# PAGE SETUP - MUST BE FIRST STREAMLIT COMMAND
-# ============================================================================
-st.set_page_config(
-    page_title="Kenya Hospital Readmission Predictor",
-    layout="wide",
-    page_icon="🏥",
-    initial_sidebar_state="expanded"
-)
 
 # ============================================================================
 # CUSTOM CSS FOR MEDICAL THEME WITH BACKGROUND IMAGE
@@ -270,11 +274,12 @@ def load_model_and_data():
         return model, features, metadata
         
     except Exception as e:
+        st.error(f"❌ Error loading model: {str(e)}")
         return None, [], {}
 
 # Load model
 model, features, metadata = load_model_and_data()
-threshold = metadata.get('model_info', {}).get('optimal_threshold', 0.48)
+threshold = metadata.get('model_info', {}).get('optimal_threshold', 0.48) if metadata else 0.48
 
 # ============================================================================
 # PREDICTION FUNCTION
@@ -282,6 +287,7 @@ threshold = metadata.get('model_info', {}).get('optimal_threshold', 0.48)
 def predict_readmission_risk(user_inputs):
     """Make prediction with exact feature engineering from training"""
     if model is None:
+        st.error("Model not loaded. Please check if model files exist.")
         return None
     
     try:
@@ -445,12 +451,9 @@ def render_dashboard():
                     Start a new patient risk assessment by entering clinical parameters 
                     and demographic information.
                 </p>
-                <button onclick="window.location='?page=assessment'" 
-                        style="background: linear-gradient(135deg, #1a73e8, #4285f4); 
-                               color: white; border: none; padding: 0.75rem 1.5rem; 
-                               border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    Start Assessment →
-                </button>
+                if st.button("Start Assessment →"):
+                    st.session_state.current_page = 'assessment'
+                    st.rerun()
             </div>
             <div>
                 <h4 style="color: #334155; margin-bottom: 1rem;">📈 Model Insights</h4>
@@ -458,12 +461,9 @@ def render_dashboard():
                     Explore model performance metrics, feature importance analysis, 
                     and clinical validation results.
                 </p>
-                <button onclick="window.location='?page=insights'" 
-                        style="background: linear-gradient(135deg, #00bfa5, #00acc1); 
-                               color: white; border: none; padding: 0.75rem 1.5rem; 
-                               border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    View Insights →
-                </button>
+                if st.button("View Insights →"):
+                    st.session_state.current_page = 'insights'
+                    st.rerun()
             </div>
         </div>
     </div>
@@ -789,7 +789,7 @@ def render_insights():
         col1, col2 = st.columns(2)
         
         with col1:
-            perf_metrics = metadata.get("performance_metrics", {})
+            perf_metrics = metadata.get("performance_metrics", {}) if metadata else {}
             
             # Create radar chart for metrics
             categories = ['Recall', 'Precision', 'F1-Score', 'Specificity', 'AUC']
@@ -1099,7 +1099,7 @@ with st.sidebar:
         is_active = st.session_state.current_page == page
         btn_class = "sidebar-btn active" if is_active else "sidebar-btn"
         
-        if st.button(f" {label}", key=f"btn_{page}", use_container_width=True):
+        if st.button(f" {label}", key=f"btn_{page}"):
             st.session_state.current_page = page
             if page == "assessment":
                 st.session_state.show_results = False
