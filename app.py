@@ -438,34 +438,47 @@ def render_dashboard():
         </div>
         """, unsafe_allow_html=True)
     
-    # Get Started Section
+    # Get Started Section - FIXED VERSION
     st.markdown("""
     <div class="glass-card" style="margin-top: 2rem;">
         <h3 style="color: #1e3a8a; margin-bottom: 1.5rem;">🚀 Get Started</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-            <div>
-                <h4 style="color: #334155; margin-bottom: 1rem;">📋 Patient Assessment</h4>
-                <p style="color: #475569; margin-bottom: 1.5rem;">
-                    Start a new patient risk assessment by entering clinical parameters 
-                    and demographic information.
-                </p>
-                if st.button("Start Assessment →", key="dashboard_assess"):
-                    st.session_state.current_page = 'assessment'
-                    st.rerun()
-            </div>
-            <div>
-                <h4 style="color: #334155; margin-bottom: 1rem;">📈 Model Insights</h4>
-                <p style="color: #475569; margin-bottom: 1.5rem;">
-                    Explore model performance metrics, feature importance analysis, 
-                    and clinical validation results.
-                </p>
-                if st.button("View Insights →", key="dashboard_insights"):
-                    st.session_state.current_page = 'insights'
-                    st.rerun()
-            </div>
-        </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Create two columns for the cards
+    col_left, col_right = st.columns(2)
+    
+    with col_left:
+        st.markdown("""
+        <div style="background: white; padding: 1.5rem; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 1rem;">
+            <h4 style="color: #334155; margin-bottom: 1rem;">📋 Patient Assessment</h4>
+            <p style="color: #475569; margin-bottom: 1.5rem;">
+                Start a new patient risk assessment by entering clinical parameters 
+                and demographic information.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Button is OUTSIDE the HTML - this is correct!
+        if st.button("Start Assessment →", key="dashboard_assess", use_container_width=True):
+            st.session_state.current_page = 'assessment'
+            st.rerun()
+    
+    with col_right:
+        st.markdown("""
+        <div style="background: white; padding: 1.5rem; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 1rem;">
+            <h4 style="color: #334155; margin-bottom: 1rem;">📈 Model Insights</h4>
+            <p style="color: #475569; margin-bottom: 1.5rem;">
+                Explore model performance metrics, feature importance analysis, 
+                and clinical validation results.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Button is OUTSIDE the HTML - this is correct!
+        if st.button("View Insights →", key="dashboard_insights", use_container_width=True):
+            st.session_state.current_page = 'insights'
+            st.rerun()
 
 def render_assessment():
     """Patient assessment page"""
