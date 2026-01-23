@@ -11,7 +11,7 @@ st.set_page_config(
 )
 
 # ============================================================================
-# IMPORT OTHER LIBRARIES
+# IMPORT OTHER LIBRARIES (NO PLOTLY)
 # ============================================================================
 import pandas as pd
 import numpy as np
@@ -20,8 +20,6 @@ import warnings
 import sys
 import os
 from datetime import datetime
-import plotly.graph_objects as go
-import plotly.express as px
 
 warnings.filterwarnings('ignore')
 
@@ -451,7 +449,7 @@ def render_dashboard():
                     Start a new patient risk assessment by entering clinical parameters 
                     and demographic information.
                 </p>
-                if st.button("Start Assessment →"):
+                if st.button("Start Assessment →", key="dashboard_assess"):
                     st.session_state.current_page = 'assessment'
                     st.rerun()
             </div>
@@ -461,7 +459,7 @@ def render_dashboard():
                     Explore model performance metrics, feature importance analysis, 
                     and clinical validation results.
                 </p>
-                if st.button("View Insights →"):
+                if st.button("View Insights →", key="dashboard_insights"):
                     st.session_state.current_page = 'insights'
                     st.rerun()
             </div>
@@ -669,29 +667,33 @@ def render_results():
         """, unsafe_allow_html=True)
     
     with col3:
-        # Create gauge chart
-        fig = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=probability * 100,
-            domain={'x': [0, 1], 'y': [0, 1]},
-            title={'text': "Risk Score", 'font': {'size': 20}},
-            gauge={
-                'axis': {'range': [0, 100], 'tickwidth': 1},
-                'bar': {'color': risk_color},
-                'steps': [
-                    {'range': [0, threshold*100], 'color': "#c6f6d5"},
-                    {'range': [threshold*100, 100], 'color': "#fed7d7"}
-                ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': threshold*100
-                }
-            }
-        ))
-        
-        fig.update_layout(height=250)
-        st.plotly_chart(fig, use_container_width=True)
+        # Simple visual gauge without Plotly
+        st.markdown(f"""
+        <div class="metric-card">
+            <div style="text-align: center;">
+                <h3 style="color: #334155; margin-bottom: 1rem;">📊 Risk Scale</h3>
+                <div style="display: flex; align-items: center; justify-content: center; margin: 1rem 0;">
+                    <div style="width: 100%; background: linear-gradient(to right, #c6f6d5, #fed7d7); 
+                                height: 20px; border-radius: 10px; position: relative;">
+                        <div style="position: absolute; left: {threshold*100}%; width: 3px; 
+                                    height: 30px; background: red; top: -5px;"></div>
+                        <div style="position: absolute; left: {min(probability*100, 100)}%; width: 0; 
+                                    height: 0; border-left: 10px solid transparent; 
+                                    border-right: 10px solid transparent; 
+                                    border-bottom: 15px solid {risk_color}; top: -20px;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                    <span style="color: #64748b; font-size: 0.9rem;">0%</span>
+                    <span style="color: #64748b; font-size: 0.9rem;">Threshold: {threshold:.1%}</span>
+                    <span style="color: #64748b; font-size: 0.9rem;">100%</span>
+                </div>
+                <div style="margin-top: 1rem; color: #64748b;">
+                    Patient score: <strong>{probability:.1%}</strong>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Clinical Recommendations
     st.markdown("""
@@ -791,35 +793,37 @@ def render_insights():
         with col1:
             perf_metrics = metadata.get("performance_metrics", {}) if metadata else {}
             
-            # Create radar chart for metrics
-            categories = ['Recall', 'Precision', 'F1-Score', 'Specificity', 'AUC']
-            values = [
-                perf_metrics.get('recall', 0.690),
-                perf_metrics.get('precision', 0.154),
-                perf_metrics.get('f1_score', 0.252),
-                0.85,  # Example specificity
-                perf_metrics.get('roc_auc', 0.660)
+            st.markdown("### 📊 Model Performance Dashboard")
+            
+            # Create a simple bar chart using HTML/CSS
+            metrics_data = [
+                ("Recall", perf_metrics.get('recall', 0.690), "#1a73e8"),
+                ("Precision", perf_metrics.get('precision', 0.154), "#00bfa5"),
+                ("F1-Score", perf_metrics.get('f1_score', 0.252), "#d32f2f"),
+                ("ROC AUC", perf_metrics.get('roc_auc', 0.660), "#2e7d32"),
+                ("Specificity", 0.85, "#f59e0b")  # Example value
             ]
             
-            fig = go.Figure(data=go.Scatterpolar(
-                r=values,
-                theta=categories,
-                fill='toself',
-                line_color='#1a73e8',
-                fillcolor='rgba(26, 115, 232, 0.2)'
-            ))
+            bars_html = ""
+            for label, value, color in metrics_data:
+                bar_width = value * 100
+                bars_html += f"""
+                <div style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <span style="color: #334155; font-weight: 500;">{label}</span>
+                        <span style="color: #64748b; font-weight: bold;">{value:.3f}</span>
+                    </div>
+                    <div style="width: 100%; background: #e2e8f0; height: 10px; border-radius: 5px;">
+                        <div style="width: {bar_width}%; background: {color}; height: 10px; border-radius: 5px;"></div>
+                    </div>
+                </div>
+                """
             
-            fig.update_layout(
-                polar=dict(
-                    radialaxis=dict(
-                        visible=True,
-                        range=[0, 1]
-                    )),
-                showlegend=False,
-                height=400
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
+            st.markdown(f"""
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                {bars_html}
+            </div>
+            """, unsafe_allow_html=True)
         
         with col2:
             st.markdown("### Model Performance Summary")
@@ -854,42 +858,43 @@ def render_insights():
                 """, unsafe_allow_html=True)
     
     with tab2:
-        # Feature importance visualization
-        features_data = {
-            'Feature': [
-                'Total Hospital Visits',
-                'Discharge to Another Hospital',
-                'Discharge to Swing Bed',
-                'Home IV Care Discharge',
-                'Emergency Visits',
-                'Hospital Stay Duration',
-                'Medication Count',
-                'Lab Procedures',
-                'Age',
-                'Admission Type'
-            ],
-            'Importance (%)': [47.98, 15.15, 13.57, 7.84, 3.49, 2.69, 2.09, 1.43, 1.10, 0.89]
-        }
+        # Feature importance visualization using HTML/CSS
+        features_data = [
+            ('Total Hospital Visits', 47.98),
+            ('Discharge to Another Hospital', 15.15),
+            ('Discharge to Swing Bed', 13.57),
+            ('Home IV Care Discharge', 7.84),
+            ('Emergency Visits', 3.49),
+            ('Hospital Stay Duration', 2.69),
+            ('Medication Count', 2.09),
+            ('Lab Procedures', 1.43),
+            ('Age', 1.10),
+            ('Admission Type', 0.89)
+        ]
         
-        fig = px.bar(
-            features_data,
-            x='Importance (%)',
-            y='Feature',
-            orientation='h',
-            color='Importance (%)',
-            color_continuous_scale='Blues',
-            text='Importance (%)'
-        )
+        # Create horizontal bars with HTML
+        bars_html = ""
+        for feature, importance in features_data:
+            bar_width = importance / 50 * 100  # Scale for better visualization
+            bars_html += f"""
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                    <span style="color: #334155; font-weight: 500;">{feature}</span>
+                    <span style="color: #64748b; font-weight: bold;">{importance:.2f}%</span>
+                </div>
+                <div style="width: 100%; background: #e2e8f0; height: 12px; border-radius: 6px;">
+                    <div style="width: {bar_width}%; background: linear-gradient(90deg, #1a73e8, #00bfa5); 
+                            height: 12px; border-radius: 6px;"></div>
+                </div>
+            </div>
+            """
         
-        fig.update_layout(
-            title="Top 10 Feature Importance",
-            yaxis={'categoryorder': 'total ascending'},
-            height=500,
-            plot_bgcolor='rgba(255, 255, 255, 0.9)'
-        )
-        
-        fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-        st.plotly_chart(fig, use_container_width=True)
+        st.markdown(f"""
+        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <h4 style="color: #1e3a8a; margin-bottom: 1.5rem;">Top 10 Feature Importance</h4>
+            {bars_html}
+        </div>
+        """, unsafe_allow_html=True)
         
         # Clinical interpretation
         st.markdown("""
@@ -1097,8 +1102,6 @@ with st.sidebar:
     
     for label, page in menu_items:
         is_active = st.session_state.current_page == page
-        btn_class = "sidebar-btn active" if is_active else "sidebar-btn"
-        
         if st.button(f" {label}", key=f"btn_{page}"):
             st.session_state.current_page = page
             if page == "assessment":
@@ -1117,16 +1120,16 @@ with st.sidebar:
     col_btn1, col_btn2 = st.columns(2)
     
     with col_btn1:
-        if st.button("🔄 Refresh", use_container_width=True):
+        if st.button("🔄 Refresh", key="refresh_btn", use_container_width=True):
             st.rerun()
     
     with col_btn2:
-        if st.button("📤 Export", use_container_width=True):
+        if st.button("📤 Export", key="export_btn", use_container_width=True):
             st.toast("Export feature coming soon!", icon="📤")
     
     # Show results button if available
     if 'prediction_result' in st.session_state and st.session_state.current_page == 'assessment':
-        if st.button("📊 View Results", type="primary", use_container_width=True):
+        if st.button("📊 View Results", type="primary", key="view_results_btn", use_container_width=True):
             st.session_state.show_results = True
             st.rerun()
     
@@ -1156,11 +1159,6 @@ with st.sidebar:
 # ============================================================================
 # MAIN CONTENT AREA
 # ============================================================================
-# Get current page from query parameters or session state
-query_params = st.query_params
-if 'page' in query_params:
-    st.session_state.current_page = query_params['page']
-
 # Render the current page
 if st.session_state.current_page == 'dashboard':
     render_dashboard()
