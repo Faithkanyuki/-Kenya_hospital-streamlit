@@ -355,7 +355,7 @@ def predict_readmission_risk(user_inputs):
         return None
 
 # ============================================================================
-# PAGE RENDERING FUNCTIONS
+# PAGE RENDERING FUNCTIONS - MUST BE DEFINED BEFORE THEY ARE CALLED
 # ============================================================================
 def render_dashboard():
     """Main dashboard page"""
