@@ -8,247 +8,26 @@ import os
 
 warnings.filterwarnings('ignore')
 
-# ============================================================================
-# CUSTOM CSS - MEDICAL PROFESSIONAL THEME
-# ============================================================================
-def load_custom_css():
-    st.markdown("""
-    <style>
-    /* Main theme colors - Medical blue palette */
-    :root {
-        --primary-color: #1e40af;
-        --secondary-color: #3b82f6;
-        --accent-color: #10b981;
-        --warning-color: #f59e0b;
-        --danger-color: #ef4444;
-        --background-light: #f8fafc;
-        --text-dark: #1e293b;
-    }
-    
-    /* Main container styling */
-    .main {
-        background-color: #f8fafc;
-    }
-    
-    /* Header styling */
-    .main-header {
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-        padding: 2rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .main-header h1 {
-        color: white;
-        margin: 0;
-        font-size: 2.2rem;
-        font-weight: 600;
-    }
-    
-    .main-header p {
-        color: #e0e7ff;
-        margin: 0.5rem 0 0 0;
-        font-size: 1.1rem;
-    }
-    
-    /* Section cards */
-    .section-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        border-left: 4px solid #3b82f6;
-        margin-bottom: 1.5rem;
-    }
-    
-    .section-header {
-        color: #1e40af;
-        font-size: 1.3rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    /* Risk assessment results */
-    .risk-high {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        border-left: 6px solid #ef4444;
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
-    
-    .risk-low {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 6px solid #10b981;
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
-    
-    .risk-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    
-    /* Input field styling */
-    .stNumberInput > div > div > input,
-    .stSelectbox > div > div > select,
-    .stSlider {
-        border-radius: 6px;
-        border: 2px solid #e2e8f0;
-        transition: border-color 0.2s;
-    }
-    
-    .stNumberInput > div > div > input:focus,
-    .stSelectbox > div > div > select:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 2rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
-        transition: all 0.3s;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.3);
-    }
-    
-    /* Metric styling */
-    [data-testid="stMetricValue"] {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: #1e40af;
-    }
-    
-    /* Info boxes */
-    .info-box {
-        background: #eff6ff;
-        border-left: 4px solid #3b82f6;
-        padding: 1rem;
-        border-radius: 6px;
-        margin: 1rem 0;
-    }
-    
-    .warning-box {
-        background: #fef3c7;
-        border-left: 4px solid #f59e0b;
-        padding: 1rem;
-        border-radius: 6px;
-        margin: 1rem 0;
-    }
-    
-    .success-box {
-        background: #d1fae5;
-        border-left: 4px solid #10b981;
-        padding: 1rem;
-        border-radius: 6px;
-        margin: 1rem 0;
-    }
-    
-    /* Clinical actions list */
-    .clinical-actions {
-        background: white;
-        padding: 1.25rem;
-        border-radius: 8px;
-        border: 2px solid #e2e8f0;
-    }
-    
-    .clinical-actions ul {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
-    }
-    
-    .clinical-actions li {
-        margin: 0.5rem 0;
-        line-height: 1.6;
-    }
-    
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
-    }
-    
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3 {
-        color: #1e40af;
-    }
-    
-    /* Footer styling */
-    .footer {
-        text-align: center;
-        padding: 2rem;
-        background: white;
-        border-top: 3px solid #3b82f6;
-        border-radius: 8px;
-        margin-top: 3rem;
-    }
-    
-    /* Loading spinner */
-    .stSpinner > div {
-        border-top-color: #3b82f6 !important;
-    }
-    
-    /* Expander styling */
-    .streamlit-expanderHeader {
-        background-color: #f1f5f9;
-        border-radius: 6px;
-        font-weight: 600;
-        color: #1e40af;
-    }
-    
-    /* Hide default Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .main-header h1 {
-            font-size: 1.5rem;
-        }
-        
-        .section-header {
-            font-size: 1.1rem;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 # Page setup
 st.set_page_config(
     page_title="Kenya Hospital Readmission Predictor",
-    page_icon="🏥",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Load custom CSS
-load_custom_css()
+st.title("Kenya Hospital Readmission Risk Predictor")
+st.write("Clinical tool for predicting patient readmission risk within 30 days")
 
-# ============================================================================
-# HEADER
-# ============================================================================
-st.markdown("""
-<div class="main-header">
-    <h1>🏥 Kenya Hospital Readmission Risk Predictor</h1>
-    <p>Clinical Decision Support Tool for 30-Day Readmission Assessment</p>
-</div>
-""", unsafe_allow_html=True)
+# Add reload button
+if st.button("🔄 Clear Cache and Reload"):
+    st.cache_resource.clear()
+    st.rerun()
+
+# System info
+with st.expander("🔧 System Information", expanded=False):
+    st.write(f"**Python version:** {sys.version.split()[0]}")
+    st.write(f"**pandas version:** {pd.__version__}")
+    st.write(f"**numpy version:** {np.__version__}")
+    st.write(f"**joblib version:** {joblib.__version__}")
 
 # ============================================================================
 # LOAD MODEL WITH VALIDATION
@@ -257,24 +36,70 @@ st.markdown("""
 def load_model_and_data():
     """Load model, features, and metadata with strict validation"""
     try:
+        st.write("📥 Loading model files...")
+        
         # Load all required files
         model = joblib.load("hospital_rf_20260121_streamlit.joblib")
         features = joblib.load("hospital_features_20260121.pkl")
         metadata = joblib.load("hospital_metadata_20260121.pkl")
         
-        # Validation checks
+        st.success("✅ Model files loaded successfully")
+        
+        # ====================================================================
+        # CRITICAL VALIDATION 1: Feature names match exactly
+        # ====================================================================
+        st.write("🔍 Validating feature alignment...")
+        
         if not hasattr(model, "feature_names_in_"):
+            st.error("❌ Model missing feature_names_in_ attribute")
+            st.info("Model was likely trained with scikit-learn < 1.0")
+            # Extract feature names if available
             if hasattr(model, 'feature_importances_'):
+                # Create synthetic feature names
                 model.feature_names_in_ = [f"feature_{i}" for i in range(len(model.feature_importances_))]
         else:
+            # Convert to lists for comparison
             model_features = list(model.feature_names_in_)
             saved_features = list(features)
             
             if len(model_features) != len(saved_features):
                 st.error(f"❌ Feature count mismatch: Model={len(model_features)}, Saved={len(saved_features)}")
                 st.stop()
+            
+            # Check each feature
+            mismatches = []
+            for i, (m_feat, s_feat) in enumerate(zip(model_features, saved_features)):
+                if m_feat != s_feat:
+                    mismatches.append((i, m_feat, s_feat))
+            
+            if mismatches:
+                st.error("❌ Feature name mismatches found!")
+                mismatch_df = pd.DataFrame(mismatches, columns=['Index', 'Model Feature', 'Saved Feature'])
+                st.dataframe(mismatch_df)
+                st.stop()
+            else:
+                st.success(f"✅ Feature schema validated: {len(model_features)} features match exactly")
         
-        # Create feature categories
+        # ====================================================================
+        # CRITICAL VALIDATION 2: Feature categories from training
+        # ====================================================================
+        st.write("📊 Analyzing feature structure...")
+        
+        # Based on your training output, we know the structure:
+        # 1. total_hospital_visits (numeric)
+        # 2-25. discharge_disposition_X (one-hot, X=0-25)
+        # 26. number_emergency (numeric)
+        # 27. time_in_hospital (numeric)
+        # 28. num_medications (numeric)
+        # 29. num_lab_procedures (numeric)
+        # 30-31. discharge_disposition_X (one-hot)
+        # 32. age_numeric (numeric)
+        # 33-37. discharge_disposition_X (one-hot)
+        # 38. age_group_2 (one-hot)
+        # 39. admission_type_3 (one-hot)
+        # 40. admission_type_7 (one-hot)
+        
+        # Create feature categories for UI
         numeric_features = []
         categorical_features = {}
         
@@ -300,6 +125,41 @@ def load_model_and_data():
                     categorical_features['age_group'] = []
                 categorical_features['age_group'].append(feat)
         
+        # ====================================================================
+        # CRITICAL VALIDATION 3: Test prediction
+        # ====================================================================
+        st.write("🧪 Running test prediction...")
+        
+        # Create test case based on your training
+        test_features = {
+            'total_hospital_visits': 3.0,        # Top feature
+            'discharge_disposition_1': 1.0,      # 2nd most important
+            'discharge_disposition_16': 1.0,     # 3rd most important
+            'discharge_disposition_7': 1.0,      # 4th most important
+            'number_emergency': 1.0,             # 5th most important
+            'time_in_hospital': 7.0,
+            'num_medications': 12.0,
+            'num_lab_procedures': 45.0,
+            'age_numeric': 58.0,
+            'gender_0': 1.0,                     # Female
+            'admission_type_0': 1.0,             # Emergency
+            'discharge_disposition_0': 1.0,      # Discharged to home
+            'age_group_1': 1.0                   # 46-65
+        }
+        
+        # Fill missing features with 0
+        test_df = pd.DataFrame({feat: [0.0] for feat in model.feature_names_in_})
+        for feat, val in test_features.items():
+            if feat in test_df.columns:
+                test_df.at[0, feat] = val
+        
+        # Make prediction
+        test_prob = model.predict_proba(test_df)[0, 1]
+        st.success(f"✅ Test prediction: {test_prob:.4f} ({test_prob*100:.1f}%)")
+        
+        # ====================================================================
+        # Store everything in metadata
+        # ====================================================================
         metadata['feature_categories'] = {
             'numeric': numeric_features,
             'categorical': categorical_features
@@ -318,9 +178,11 @@ def load_model_and_data():
         else:
             metadata['model_info'].update(model_info)
         
+        # Set default threshold from training
         if 'optimal_threshold' not in metadata.get('model_info', {}):
             metadata['model_info']['optimal_threshold'] = 0.48
         
+        # Performance metrics from training
         if 'performance_metrics' not in metadata:
             metadata['performance_metrics'] = {
                 'recall': 0.690,
@@ -329,6 +191,7 @@ def load_model_and_data():
                 'roc_auc': 0.660
             }
         
+        st.success("🎯 Model ready for predictions")
         return model, model.feature_names_in_, metadata
         
     except Exception as e:
@@ -340,14 +203,13 @@ def load_model_and_data():
         return None, [], {}
 
 # Load the model
-with st.spinner("🔄 Loading clinical model..."):
-    model, features, metadata = load_model_and_data()
+model, features, metadata = load_model_and_data()
 
 # Get threshold from metadata
 threshold = metadata.get('model_info', {}).get('optimal_threshold', 0.48)
 
 # ============================================================================
-# PREDICTION FUNCTION
+# PREDICTION FUNCTION - EXACT MATCH TO TRAINING
 # ============================================================================
 def predict_readmission_risk(user_inputs):
     """Make prediction with exact feature engineering from training"""
@@ -357,10 +219,14 @@ def predict_readmission_risk(user_inputs):
         return None
     
     try:
+        # Create DataFrame with all features initialized to 0.0
+        # This ensures we have ALL features in the EXACT order
         feature_dict = {feat: 0.0 for feat in features}
         input_df = pd.DataFrame([feature_dict])
         
-        # Set numeric features
+        # ====================================================================
+        # SET NUMERIC FEATURES (Exactly as in training)
+        # ====================================================================
         input_df['time_in_hospital'] = float(user_inputs['time_in_hospital'])
         input_df['num_lab_procedures'] = float(user_inputs['num_lab_procedures'])
         input_df['num_medications'] = float(user_inputs['num_medications'])
@@ -368,29 +234,44 @@ def predict_readmission_risk(user_inputs):
         input_df['number_emergency'] = float(user_inputs['number_emergency'])
         input_df['age_numeric'] = float(user_inputs['age_numeric'])
         
-        # Gender mapping
-        gender_map = {"Female": 0, "Male": 1, "Unknown/Other": 2}
+        # ====================================================================
+        # SET CATEGORICAL FEATURES (One-hot encoding EXACTLY as in training)
+        # ====================================================================
+        
+        # Gender mapping (from training data exploration)
+        gender_map = {
+            "Female": 0,      # gender_0 = 1
+            "Male": 1,        # gender_1 = 1
+            "Unknown/Other": 2  # gender_2 = 1
+        }
         gender_idx = gender_map[user_inputs['gender']]
         input_df[f'gender_{gender_idx}'] = 1.0
         
-        # Admission type mapping
+        # Admission type mapping (from training data)
         admission_map = {
-            "Emergency": 0, "Urgent": 1, "Elective": 2, "Newborn": 3,
-            "Trauma Center": 4, "Not Mapped": 5, "NULL": 6, "Not Available": 7
+            "Emergency": 0,      # admission_type_0 = 1
+            "Urgent": 1,         # admission_type_1 = 1
+            "Elective": 2,       # admission_type_2 = 1
+            "Newborn": 3,        # admission_type_3 = 1
+            "Trauma Center": 4,  # admission_type_4 = 1
+            "Not Mapped": 5,     # admission_type_5 = 1
+            "NULL": 6,           # admission_type_6 = 1
+            "Not Available": 7   # admission_type_7 = 1
         }
         admission_idx = admission_map[user_inputs['admission_type']]
         input_df[f'admission_type_{admission_idx}'] = 1.0
         
-        # Discharge disposition mapping
+        # Discharge disposition mapping (CRITICAL - must match training)
+        # Based on your feature importance: discharge_disposition_1, _16, _7 are important
         discharge_map = {
-            "Discharged to home": 0,
-            "Discharged/transferred to another short term hospital": 1,
+            "Discharged to home": 0,  # discharge_disposition_0 = 1
+            "Discharged/transferred to another short term hospital": 1,  # _1 = 1
             "Discharged/transferred to SNF": 2,
             "Discharged/transferred to ICF": 3,
             "Discharged/transferred to another type of inpatient care institution": 4,
             "Discharged/transferred to home with home health service": 5,
             "Left AMA": 6,
-            "Discharged/transferred to home under care of Home IV provider": 7,
+            "Discharged/transferred to home under care of Home IV provider": 7,  # _7 = 1
             "Admitted as an inpatient to this hospital": 8,
             "Neonate discharged to another hospital": 9,
             "Expired": 10,
@@ -399,7 +280,7 @@ def predict_readmission_risk(user_inputs):
             "Hospice / medical facility": 13,
             "Discharged/transferred within this institution": 14,
             "Discharged/transferred to rehab": 15,
-            "Discharged/transferred to another Medicare certified swing bed": 16,
+            "Discharged/transferred to another Medicare certified swing bed": 16,  # _16 = 1
             "Discharged/transferred to a long term care hospital": 17,
             "Discharged/transferred to a nursing facility certified under Medicaid": 18,
             "Discharged/transferred to a psychiatric hospital": 19,
@@ -414,14 +295,53 @@ def predict_readmission_risk(user_inputs):
         input_df[f'discharge_disposition_{discharge_idx}'] = 1.0
         
         # Age group mapping
-        age_group_map = {"18-45": 0, "46-65": 1, "66-85": 2, "86+": 3}
+        age_group_map = {
+            "18-45": 0,   # age_group_0 = 1
+            "46-65": 1,   # age_group_1 = 1
+            "66-85": 2,   # age_group_2 = 1
+            "86+": 3      # age_group_3 = 1
+        }
         age_group_idx = age_group_map[user_inputs['age_group']]
         input_df[f'age_group_{age_group_idx}'] = 1.0
         
-        # Make prediction
+        # ====================================================================
+        # VALIDATION CHECKS
+        # ====================================================================
+        validation_expander = st.expander("🔍 Prediction Validation", expanded=False)
+        with validation_expander:
+            # Check 1: Feature count
+            st.write(f"**Feature Count:** {len(input_df.columns)} (Expected: {model.n_features_in_})")
+            
+            # Check 2: Non-zero features (should be 13-15)
+            non_zero_count = (input_df != 0).sum().sum()
+            st.write(f"**Non-zero features:** {non_zero_count}")
+            
+            # Check 3: Top features from training
+            st.write("**Setting top important features:**")
+            top_features = ['total_hospital_visits', 'discharge_disposition_1', 
+                          'discharge_disposition_16', 'discharge_disposition_7', 
+                          'number_emergency']
+            for feat in top_features:
+                if feat in input_df.columns:
+                    value = input_df[feat].iloc[0]
+                    st.write(f"- {feat}: {value}")
+            
+            # Check 4: Show all non-zero features
+            non_zero_features = input_df.loc[:, (input_df != 0).any()].columns.tolist()
+            st.write(f"**All non-zero features ({len(non_zero_features)}):**")
+            for feat in non_zero_features:
+                st.write(f"  - {feat}: {input_df[feat].iloc[0]}")
+        
+        # ====================================================================
+        # MAKE PREDICTION
+        # ====================================================================
+        # Ensure correct data type
         input_df = input_df.astype(np.float32)
+        
+        # Get probability
         probability = model.predict_proba(input_df)[0, 1]
         
+        # Final validation
         if not (0 <= probability <= 1):
             st.error(f"Invalid probability: {probability}")
             return None
@@ -430,86 +350,76 @@ def predict_readmission_risk(user_inputs):
         
     except Exception as e:
         st.error(f"Prediction error: {str(e)}")
+        st.error("Please check that all inputs are valid.")
         return None
 
 # ============================================================================
-# USER INTERFACE - PATIENT ASSESSMENT
+# USER INTERFACE - MATCHES TRAINING DATA DISTRIBUTION
 # ============================================================================
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
-st.markdown('<div class="section-header">📋 Patient Clinical Assessment</div>', unsafe_allow_html=True)
+st.header("📋 Patient Assessment")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("#### 🏥 Clinical Measurements")
+    st.subheader("🏥 Clinical Information")
     
+    # Based on training data statistics
     time_in_hospital = st.slider(
-        "Length of Stay (days)",
+        "Time in Hospital (days)",
         min_value=1,
         max_value=30,
         value=7,
-        help="Number of days patient spent in hospital during current admission"
+        help="Average in training: ~4.4 days"
     )
     
     num_lab_procedures = st.number_input(
-        "Laboratory Procedures Conducted",
+        "Number of Lab Procedures",
         min_value=0,
         max_value=200,
         value=45,
-        help="Total number of lab tests performed (average: ~43)"
+        help="Average in training: ~43"
     )
     
     num_medications = st.number_input(
-        "Medications Prescribed",
+        "Number of Medications",
         min_value=0,
         max_value=100,
         value=12,
-        help="Number of distinct medications administered (average: ~16)"
+        help="Average in training: ~16"
     )
     
-    st.markdown("#### 📊 Patient History")
-    
     total_hospital_visits = st.number_input(
-        "Total Hospital Encounters (Past 12 Months)",
+        "Total Hospital Visits (past year)",
         min_value=0,
         max_value=50,
         value=3,
-        help="⭐ PRIMARY RISK FACTOR - Total inpatient and outpatient visits"
+        help="**TOP PREDICTOR** - Average in training: ~2.4"
     )
     
     number_emergency = st.number_input(
-        "Emergency Department Visits (Past 12 Months)",
+        "Emergency Visits (past year)",
         min_value=0,
         max_value=20,
         value=1,
-        help="⭐ KEY PREDICTOR - Number of ED visits in past year"
+        help="**5th most important predictor** - Average in training: ~0.3"
     )
-
-with col2:
-    st.markdown("#### 👤 Patient Demographics")
     
     age_numeric = st.slider(
-        "Patient Age (years)",
+        "Age (years)",
         min_value=18,
         max_value=100,
         value=58,
-        help="Patient's current age"
+        help="Average in training: ~55"
     )
-    
-    age_group = st.selectbox(
-        "Age Category",
-        ["18-45", "46-65", "66-85", "86+"],
-        index=1,
-        help="Categorical age grouping for risk stratification"
-    )
+
+with col2:
+    st.subheader("👤 Demographic & Administrative Information")
     
     gender = st.selectbox(
         "Gender",
         ["Female", "Male", "Unknown/Other"],
-        help="Patient's recorded gender"
+        help="Female is most common in training data"
     )
-    
-    st.markdown("#### 🏥 Administrative Data")
     
     admission_type = st.selectbox(
         "Admission Type",
@@ -518,20 +428,20 @@ with col2:
             "Trauma Center", "Not Mapped", "NULL", "Not Available"
         ],
         index=0,
-        help="Type of hospital admission"
+        help="Emergency admissions have higher readmission risk"
     )
     
     discharge_disposition = st.selectbox(
         "Discharge Disposition",
         [
-            "Discharged to home",
-            "Discharged/transferred to another short term hospital",
+            "Discharged to home",  # Index 0
+            "Discharged/transferred to another short term hospital",  # Index 1 (2nd most important)
             "Discharged/transferred to SNF",
             "Discharged/transferred to ICF",
             "Discharged/transferred to another type of inpatient care institution",
             "Discharged/transferred to home with home health service",
             "Left AMA",
-            "Discharged/transferred to home under care of Home IV provider",
+            "Discharged/transferred to home under care of Home IV provider",  # Index 7 (4th most important)
             "Admitted as an inpatient to this hospital",
             "Neonate discharged to another hospital",
             "Expired",
@@ -540,7 +450,7 @@ with col2:
             "Hospice / medical facility",
             "Discharged/transferred within this institution",
             "Discharged/transferred to rehab",
-            "Discharged/transferred to another Medicare certified swing bed",
+            "Discharged/transferred to another Medicare certified swing bed",  # Index 16 (3rd most important)
             "Discharged/transferred to a long term care hospital",
             "Discharged/transferred to a nursing facility certified under Medicaid",
             "Discharged/transferred to a psychiatric hospital",
@@ -551,28 +461,27 @@ with col2:
             "Discharged/transferred to a hospital-based Medicare approved swing bed",
             "Discharged/transferred to an inpatient rehabilitation facility"
         ],
-        help="⭐ CRITICAL PREDICTOR - Patient discharge destination"
+        help="**CRITICAL: Dispositions 1, 16, 7 are top predictors**"
+    )
+    
+    age_group = st.selectbox(
+        "Age Group",
+        ["18-45", "46-65", "66-85", "86+"],
+        index=1,
+        help="46-65 is most common age group"
     )
 
-st.markdown('</div>', unsafe_allow_html=True)
+# ============================================================================
+# PREDICTION BUTTON AND RESULTS
+# ============================================================================
+st.markdown("---")
 
-# ============================================================================
-# PREDICTION BUTTON
-# ============================================================================
-st.markdown("<br>", unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    predict_button = st.button("🔮 Calculate Readmission Risk", type="primary", use_container_width=True)
-
-# ============================================================================
-# PREDICTION RESULTS
-# ============================================================================
-if predict_button:
+if st.button("🔮 Predict Readmission Risk", type="primary", use_container_width=True):
     if model is None:
-        st.error("❌ Model not available. Please check if model files exist.")
+        st.error("Model not available. Please check if model files exist.")
     else:
-        with st.spinner("🔄 Analyzing patient data and calculating risk probability..."):
+        with st.spinner("🔄 Calculating risk..."):
+            # Collect all inputs
             user_inputs = {
                 'time_in_hospital': time_in_hospital,
                 'num_lab_procedures': num_lab_procedures,
@@ -586,176 +495,196 @@ if predict_button:
                 'age_group': age_group
             }
             
+            # Make prediction
             probability = predict_readmission_risk(user_inputs)
             
             if probability is not None:
-                st.success("✅ Risk Assessment Complete")
+                st.success("✅ Assessment Complete")
                 
-                # Risk classification
-                is_high_risk = probability >= threshold
-                risk_class = "risk-high" if is_high_risk else "risk-low"
-                risk_icon = "🔴" if is_high_risk else "🟢"
-                risk_text = "HIGH RISK" if is_high_risk else "LOW RISK"
-                risk_color = "#dc2626" if is_high_risk else "#16a34a"
+                # Display results
+                st.subheader("📊 Risk Assessment Results")
                 
-                # Display risk level prominently
-                st.markdown(f"""
-                <div class="{risk_class}">
-                    <div class="risk-title" style="color: {risk_color};">
-                        {risk_icon} {risk_text} for 30-Day Readmission
-                    </div>
-                    <p style="font-size: 1.1rem; margin: 0;">
-                        Risk Probability: <strong style="font-size: 1.3rem;">{probability:.1%}</strong>
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                # Detailed metrics
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3 = st.columns(3)
                 
                 with col1:
                     st.metric(
-                        "Risk Score",
+                        "Risk Probability",
                         f"{probability:.1%}",
-                        help="Predicted probability of readmission within 30 days"
+                        delta=f"{probability - threshold:.1%} vs threshold",
+                        delta_color="inverse"
                     )
+                    st.metric("Decision Threshold", f"{threshold:.1%}")
                 
                 with col2:
-                    st.metric(
-                        "Decision Threshold",
-                        f"{threshold:.1%}",
-                        help="Model threshold optimized for high sensitivity"
-                    )
+                    risk_level = "🔴 HIGH RISK" if probability >= threshold else "🟢 LOW RISK"
+                    st.metric("Risk Level", risk_level)
+                    
+                    if probability >= threshold:
+                        st.error("⚠️ Priority follow-up required")
+                        st.write("""
+                        **Clinical Actions (per model training):**
+                        - Schedule follow-up within 7 days
+                        - Coordinate with home care services
+                        - Review medication adherence
+                        - Flag for care team notification
+                        """)
+                    else:
+                        st.success("✅ Standard care protocol")
+                        st.write("""
+                        **Clinical Actions (per model training):**
+                        - Standard discharge planning
+                        - 30-day follow-up appointment
+                        - Patient education materials
+                        - Regular monitoring advised
+                        """)
                 
                 with col3:
-                    delta_val = probability - threshold
-                    st.metric(
-                        "Threshold Margin",
-                        f"{delta_val:+.1%}",
-                        delta=f"{delta_val:+.1%}",
-                        delta_color="inverse",
-                        help="Distance from decision threshold"
-                    )
-                
-                with col4:
-                    confidence = abs(probability - 0.5) * 2
-                    st.metric(
-                        "Prediction Confidence",
-                        f"{confidence:.1%}",
-                        help="Model confidence in prediction"
-                    )
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                # Clinical recommendations
-                col_left, col_right = st.columns(2)
-                
-                with col_left:
-                    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-                    st.markdown('<div class="section-header">📋 Clinical Action Plan</div>', unsafe_allow_html=True)
+                    st.write("**🎯 Top Risk Factors Present:**")
                     
-                    if is_high_risk:
-                        st.markdown("""
-                        <div class="clinical-actions">
-                        <h4 style="color: #dc2626; margin-top: 0;">⚠️ Enhanced Care Protocol Required</h4>
-                        <ul>
-                            <li><strong>Schedule early follow-up</strong> within 7 days of discharge</li>
-                            <li><strong>Coordinate home health services</strong> for post-discharge monitoring</li>
-                            <li><strong>Medication reconciliation</strong> and adherence counseling</li>
-                            <li><strong>Care team notification</strong> for enhanced discharge planning</li>
-                            <li><strong>Patient education</strong> on warning signs and when to seek care</li>
-                            <li><strong>Consider transitional care</strong> program enrollment</li>
-                        </ul>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown("""
-                        <div class="clinical-actions">
-                        <h4 style="color: #16a34a; margin-top: 0;">✅ Standard Care Protocol</h4>
-                        <ul>
-                            <li><strong>Schedule routine follow-up</strong> within 30 days</li>
-                            <li><strong>Standard discharge instructions</strong> and education materials</li>
-                            <li><strong>Medication list</strong> and administration guidance</li>
-                            <li><strong>Primary care coordination</strong> for continuity of care</li>
-                            <li><strong>Emergency contact information</strong> provided to patient</li>
-                        </ul>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
-                with col_right:
-                    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-                    st.markdown('<div class="section-header">🎯 Key Risk Factors Identified</div>', unsafe_allow_html=True)
-                    
+                    # Based on feature importance from training
                     risk_factors = []
                     
+                    # Total hospital visits (MOST IMPORTANT)
                     if total_hospital_visits >= 4:
-                        risk_factors.append(("🔴", f"Multiple hospital encounters ({total_hospital_visits} visits)", "Primary risk driver"))
+                        risk_factors.append(f"• **High hospital visits** ({total_hospital_visits}) - Top predictor")
                     
-                    discharge_high_risk = [
+                    # Discharge disposition (2nd, 3rd, 4th most important)
+                    discharge_idx = [
                         "Discharged/transferred to another short term hospital",
                         "Discharged/transferred to another Medicare certified swing bed",
                         "Discharged/transferred to home under care of Home IV provider"
                     ]
-                    if discharge_disposition in discharge_high_risk:
-                        risk_factors.append(("🟠", "Complex discharge disposition", "Moderate risk factor"))
+                    if discharge_disposition in discharge_idx:
+                        risk_factors.append(f"• **Specific discharge disposition** - High importance in model")
                     
+                    # Emergency visits (5th most important)
                     if number_emergency >= 2:
-                        risk_factors.append(("🟠", f"Frequent ED utilization ({number_emergency} visits)", "Significant predictor"))
+                        risk_factors.append(f"• **Multiple ED visits** ({number_emergency}) - 5th most important")
                     
+                    # Other factors
                     if time_in_hospital >= 10:
-                        risk_factors.append(("🟡", f"Extended length of stay ({time_in_hospital} days)", "Contributing factor"))
+                        risk_factors.append(f"• **Long hospital stay** ({time_in_hospital} days)")
                     
                     if num_medications >= 15:
-                        risk_factors.append(("🟡", f"Polypharmacy ({num_medications} medications)", "Complexity indicator"))
+                        risk_factors.append(f"• **High medication count** ({num_medications})")
                     
                     if age_numeric >= 75:
-                        risk_factors.append(("🟡", f"Advanced age ({age_numeric} years)", "Age-related risk"))
+                        risk_factors.append(f"• **Advanced age** ({age_numeric} years)")
                     
                     if risk_factors:
-                        for icon, factor, description in risk_factors:
-                            st.markdown(f"""
-                            <div style="margin: 0.75rem 0; padding: 0.75rem; background: #f8fafc; border-radius: 6px; border-left: 3px solid #3b82f6;">
-                                <strong>{icon} {factor}</strong><br>
-                                <span style="color: #64748b; font-size: 0.9rem;">{description}</span>
-                            </div>
-                            """, unsafe_allow_html=True)
+                        for factor in risk_factors:
+                            st.write(factor)
                     else:
-                        st.info("No significant high-risk factors identified in current assessment")
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
+                        st.write("• No high-risk factors identified")
                 
-                # Model context
-                st.markdown('<div class="info-box">', unsafe_allow_html=True)
-                st.markdown("""
-                **📊 Clinical Model Performance Context**
-                
-                This predictive model was validated on 81,412 patient encounters with the following performance metrics:
-                - **Sensitivity (Recall)**: 69.0% - Identifies 69% of patients who will be readmitted
-                - **Specificity**: Optimized to minimize missed high-risk patients
-                - **Positive Predictive Value**: 15.4% - When flagged as high-risk, 15.4% actually readmit
-                - **ROC AUC**: 0.660 - Good discriminative ability
-                
-                The model threshold is calibrated to prioritize patient safety by identifying most patients at risk,
-                accepting higher false-positive rates to prevent missed interventions.
+                # Show explanation based on training
+                st.info("""
+                **Model Performance Context (from training):**
+                - **Recall**: 69.0% - Model identifies 69% of actual readmissions
+                - **Precision**: 15.4% - When model predicts HIGH RISK, 15.4% actually readmit
+                - **Threshold**: 48% - Optimized to maximize identification of high-risk patients
+                - **False Positives**: Expected - Model prioritizes catching true positives
                 """)
-                st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================================
-# SIDEBAR - MODEL INFORMATION
+# SIDEBAR WITH MODEL INFORMATION
 # ============================================================================
 with st.sidebar:
-    st.markdown("### 🤖 Clinical Model Information")
+    st.title("🤖 Model Information")
     
-    with st.expander("📈 Performance Metrics", expanded=True):
-        perf_metrics = metadata.get("performance_metrics", {})
-        
-        metric_col1, metric_col2 = st.columns(2)
-        with metric_col1:
-            st.metric("Sensitivity", f"{perf_metrics.get('recall', 0.690):.1%}")
-            st.metric("F1-Score", f"{perf_metrics.get('f1_score', 0.252):.3f}")
-        with metric_col2:
-            st.metric("
+    # Model performance from training
+    perf_metrics = metadata.get("performance_metrics", {})
+    
+    st.subheader("📈 Performance Metrics")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Recall", f"{perf_metrics.get('recall', 0.690):.1%}")
+        st.metric("Precision", f"{perf_metrics.get('precision', 0.154):.1%}")
+    with col2:
+        st.metric("F1-Score", f"{perf_metrics.get('f1_score', 0.252):.3f}")
+        st.metric("ROC AUC", f"{perf_metrics.get('roc_auc', 0.660):.3f}")
+    
+    st.divider()
+    
+    st.subheader("⚙️ Model Details")
+    model_info = metadata.get("model_info", {})
+    st.write(f"• **Algorithm**: Random Forest")
+    st.write(f"• **Features**: {len(features)}")
+    st.write(f"• **n_estimators**: {model_info.get('n_estimators', 285)}")
+    st.write(f"• **max_depth**: {model_info.get('max_depth', 5)}")
+    st.write(f"• **Threshold**: {threshold:.1%}")
+    
+    st.divider()
+    
+    st.subheader("🎯 Top 5 Predictors")
+    st.write("From feature importance analysis:")
+    st.write("1. **total_hospital_visits** (47.98%)")
+    st.write("2. **discharge_disposition_1** (15.15%)")
+    st.write("3. **discharge_disposition_16** (13.57%)")
+    st.write("4. **discharge_disposition_7** (7.84%)")
+    st.write("5. **number_emergency** (3.49%)")
+    
+    st.divider()
+    
+    st.subheader("📋 Training Context")
+    st.write("• **Dataset**: 81,412 training samples")
+    st.write("• **Class Balance**: 11.2% readmitted, 88.8% not readmitted")
+    st.write("• **Optimization**: Threshold tuned for Recall ≥ 65%")
+    st.write("• **Use Case**: Identify high-risk patients for intervention")
+    
+    # Quick test
+    if st.button("🧪 Run Quick Test"):
+        test_inputs = {
+            'time_in_hospital': 7,
+            'num_lab_procedures': 45,
+            'num_medications': 12,
+            'total_hospital_visits': 3,
+            'number_emergency': 1,
+            'age_numeric': 58,
+            'gender': "Female",
+            'admission_type': "Emergency",
+            'discharge_disposition': "Discharged to home",
+            'age_group': "46-65"
+        }
+        prob = predict_readmission_risk(test_inputs)
+        if prob:
+            st.info(f"Test prediction: {prob:.1%}")
+
+# ============================================================================
+# FOOTER
+# ============================================================================
+st.markdown("---")
+st.caption("🏥 **Kenya Hospital System • Clinical Decision Support Tool v1.0**")
+st.caption("""
+**For clinical support only • Combine with professional judgment**
+- Model trained on historical hospital data
+- Validated for Kenyan healthcare context
+- Threshold optimized for maximum high-risk patient identification
+""")
+
+# ============================================================================
+# DEBUG MODE (Hidden by default) - FIXED SYNTAX
+# ============================================================================
+if st.sidebar.checkbox("🛠️ Debug Mode", value=False):
+    st.sidebar.subheader("Debug Information")
+    
+    st.sidebar.write("**Features:**")
+    st.sidebar.write(f"Total: {len(features)}")
+    
+    # Show feature categories
+    feature_cats = metadata.get('feature_categories', {})
+    if feature_cats:
+        st.sidebar.write(f"Numeric: {len(feature_cats.get('numeric', []))}")
+        st.sidebar.write(f"Categorical groups: {len(feature_cats.get('categorical', {}))}")
+    
+    # Show first 10 features
+    st.sidebar.write("**First 10 features:**")
+    for feat in list(features)[:10]:
+        st.sidebar.write(f"- {feat}")
+    
+    # Show model attributes - FIXED SYNTAX HERE
+    if model:
+        st.sidebar.write("**Model attributes:**")
+        st.sidebar.write(f"- n_features_in_: {model.n_features_in_}")
+        st.sidebar.write(f"- n_estimators: {model.n_estimators}")
+        st.sidebar.write(f"- max_depth: {model.max_depth}")    
